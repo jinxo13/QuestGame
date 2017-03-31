@@ -1,4 +1,4 @@
-#QuestGame (working title) - A Quest RPG for alexa
+# QuestGame - A Quest RPG for Alexa
 
 ---
 
