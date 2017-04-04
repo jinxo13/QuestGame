@@ -1,0 +1,39 @@
+char_choice: |
+    You chose a {{char}}.
+
+pick_lock: |
+    You try and pick the lock.
+
+pick_lock_success: |
+    Success!. The {{item}} is now unlocked.
+
+pick_lock_fail: |
+    Rats!. You failed this time. The {{item}} remains locked.
+
+cast_firespell: |
+    You blast a fireball at the {{item}}
+
+cast_firespell_fail: |
+    Your spell failed! All you got was a fizzle and puff of smoke.
+
+open_door_success: |
+    You open the door and enter the {{place}}
+
+open_item_fail_locked: |
+    The {{item}} won't budge it's locked
+
+open_door_fail_barred: |
+    The door won't budge it's barred from the inside.
+
+open_item_fail_heavy: |
+    You can't budge the {{item}} it's too heavy.
+
+open_item_success: |
+    You open the {{item}}.
+
+pull_chest: |
+    You pull the chest around for a while.
+    It's in a slightly different position now and looks to be enjoying the new perspective.
+
+pull_cannot: |
+    I can't pull that

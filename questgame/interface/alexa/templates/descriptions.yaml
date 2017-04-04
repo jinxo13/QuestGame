@@ -1,0 +1,21 @@
+descr_mage: |
+    Not one to heft a sword in battle, Mages are happy to rain down spells from afar.
+    It's best not to anger a Mage, unless you'd like to spend the rest of your life on a lilypad.
+    Mages favour a trusty staff, a nice warm robe, and won't get physical if a spell will do.
+    Key traits are their wisdom and intelligence, and a penchant for pie.
+
+descr_thief: |
+    Keep your eye on a thief, they're likely to steal your purse or try and stab you in the back, probably both.
+    Thiefs favour short blades, are handy with a bow, and light armor.
+    Thiefs key traits are their dexterity and intelligence, and an eye for expensive jewelry.
+
+descr_fighter: |
+    Fighters have a straight forward approach - fight first talk later.
+    Fighters favour two handed or long weapons, heavy armor and a trusty shield.
+    Fighters key traits are strength and health. "tiz but a flesh wound" is often the favourite words of a fighter.
+
+descr_ranger: |
+    Rangers are most at home in the forest, roasting a rabbit on a spit.
+    Rangers favour the long or composite bows, and are handy with short blades, and prefer light or medium armor.
+    Rangers key traits are strength and dexterity, and tracking mud all over the new rug.
+

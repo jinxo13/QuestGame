@@ -1,0 +1,11 @@
+ring
+chest
+door
+room
+window
+tree
+wall
+mage
+theif
+fighter
+ranger

@@ -1,0 +1,3 @@
+chest
+door
+window

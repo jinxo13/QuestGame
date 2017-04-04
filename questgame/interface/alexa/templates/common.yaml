@@ -1,0 +1,42 @@
+welcome: |
+    Welcome to Adventure Quest.
+    You can say 'Help' at anytime to get a list of commands.
+
+what: |
+    What would you like to do?
+
+are_you_sure: |
+    Are you sure you want to start a new game?
+    
+where: |
+    Rats - I thought you knew!
+    
+help: |
+    You're on your own, hero!
+
+choose_class: |
+    Do you want to be a Thief, a Fighter, a Mage or a Ranger?
+
+no_games: |
+    The first thing we need to do is setup your hero.
+    Hero's can be of the following classes:
+    a thief.
+    a fighter.
+    a mage.
+    a ranger.
+    You can say describe and then the class for more info.
+
+load_game: |
+    Let's load a game.
+
+bye: |
+    Thanks for playing!
+
+unsure: |
+    I didn't understand that. You can say help for options.
+
+exit: |
+    Are you sure you want to exit the game?
+
+no_action: |
+    It looks like that's not goping to work.

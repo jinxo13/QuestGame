@@ -5,9 +5,8 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>ac5aefba-a143-4eaa-b84c-c96e86cf1ebb</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>alexa_control.py</StartupFile>
-    <SearchPath>
-    </SearchPath>
+    <StartupFile>questgame\interface\alexa\alexa_control.py</StartupFile>
+    <SearchPath>..\alexa-agent\;..\alexa-client\</SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <Name>QuestGame</Name>
@@ -24,52 +23,68 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="common\constants.py">
+    <Compile Include="questgame\common\errors.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="game_items\armor.py">
+    <Compile Include="questgame\common\constants.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="common\base_classes.py">
+    <Compile Include="questgame\interface\controller.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="db\save_load_game.py">
+    <Compile Include="questgame\interface\__init__.py" />
+    <Compile Include="questgame\common\test_constants.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="db\database.py">
+    <Compile Include="questgame\game_items\armor.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="db\__init__.py">
+    <Compile Include="questgame\common\base_classes.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="game_items\__init__.py">
+    <Compile Include="questgame\db\database.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="game_items\potions.py">
+    <Compile Include="questgame\db\__init__.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="game_items\spells.py">
+    <Compile Include="questgame\game_items\__init__.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="common\__init__.py">
+    <Compile Include="questgame\game_items\potions.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="interface\alexa\utils.py">
+    <Compile Include="questgame\game_items\spells.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="alexa_control.py">
+    <Compile Include="questgame\common\__init__.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="interface\alexa\__init__.py">
+    <Compile Include="questgame\interface\alexa\utils.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="interface\__init__.py">
+    <Compile Include="questgame\interface\alexa\alexa_control.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="players\__init__.py">
+    <Compile Include="questgame\interface\alexa\__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="questgame\rooms\room.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="questgame\rooms\__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="questgame\__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="questgame\players\__init__.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="tests\alexa_test_helpers.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="tests\test_DEPLOY.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="tests\test_alexa_interface.py">
@@ -78,13 +93,13 @@
     <Compile Include="tests\test_DB.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="game_items\traps.py">
+    <Compile Include="questgame\game_items\traps.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="game_items\standard_items.py">
+    <Compile Include="questgame\game_items\standard_items.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="game_items\items.py">
+    <Compile Include="questgame\game_items\items.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="tests\test_player.py">
@@ -93,25 +108,25 @@
     <Compile Include="tests\test_battle.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="players\skills.py">
+    <Compile Include="questgame\players\skills.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="players\character_classes.py">
+    <Compile Include="questgame\players\character_classes.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="game_items\weapons.py">
+    <Compile Include="questgame\game_items\weapons.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="common\rules.py">
+    <Compile Include="questgame\common\rules.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="common\utils.py">
+    <Compile Include="questgame\common\utils.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="common\dice.py">
+    <Compile Include="questgame\common\dice.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="players\players.py" />
+    <Compile Include="questgame\players\players.py" />
     <Compile Include="tests\test_player_stats.py">
       <SubType>Code</SubType>
     </Compile>
@@ -120,18 +135,37 @@
     <InterpreterReference Include="{2af0f10d-7135-4994-9156-5d01c9c11b7e}\2.7" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="db\" />
-    <Folder Include="config\" />
-    <Folder Include="game_items\" />
-    <Folder Include="common\" />
-    <Folder Include="interface\" />
-    <Folder Include="interface\alexa\" />
-    <Folder Include="players\" />
+    <Folder Include="speechAssets\customSlotTypes\" />
+    <Folder Include="questgame\" />
+    <Folder Include="questgame\common\" />
+    <Folder Include="questgame\db\" />
+    <Folder Include="questgame\config\" />
+    <Folder Include="questgame\game_items\" />
+    <Folder Include="questgame\common\" />
+    <Folder Include="questgame\interface\" />
+    <Folder Include="questgame\interface\alexa\" />
+    <Folder Include="questgame\interface\alexa\templates\" />
+    <Folder Include="speechAssets\" />
+    <Folder Include="questgame\" />
+    <Folder Include="questgame\rooms\" />
+    <Folder Include="questgame\players\" />
     <Folder Include="tests\" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="config\rooms.json" />
-    <Content Include="templates.yaml" />
+    <Content Include="speechAssets\customSlotTypes\throwableItem.txt" />
+    <Content Include="speechAssets\customSlotTypes\targetableItem.txt" />
+    <Content Include="speechAssets\customSlotTypes\searchableItem.txt" />
+    <Content Include="speechAssets\customSlotTypes\spell.txt" />
+    <Content Include="speechAssets\customSlotTypes\openableItem.txt" />
+    <Content Include="speechAssets\customSlotTypes\describeableItem.txt" />
+    <Content Include="speechAssets\intents.json" />
+    <Content Include="speechAssets\SampleUtterances.txt" />
+    <Content Include="speechAssets\customSlotTypes\character.txt" />
+    <Content Include="questgame\config\rooms.json" />
+    <Content Include="questgame\interface\alexa\templates\rooms.yaml" />
+    <Content Include="questgame\interface\alexa\templates\actions.yaml" />
+    <Content Include="questgame\interface\alexa\templates\descriptions.yaml" />
+    <Content Include="questgame\interface\alexa\templates\common.yaml" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

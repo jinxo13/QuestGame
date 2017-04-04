@@ -1,8 +1,8 @@
 ﻿import unittest
-from players import players, character_classes, skills
-from game_items import armor, weapons
-from common.rules import GameRules
-from common import base_classes
+from questgame.players import players, character_classes, skills
+from questgame.game_items import armor, weapons
+from questgame.common.rules import GameRules
+from questgame.common import base_classes
 
 class test_battle(unittest.TestCase):
     tried_sneak_attack = False

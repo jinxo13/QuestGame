@@ -1,10 +1,10 @@
 ﻿import unittest
-from game_items import weapons, armor, items, spells, traps, potions
-from game_items.standard_items import Inventory, Chest
-from players import character_classes, players
-from common import base_classes
-from common.utils import Helpers
-from common.rules import GameRules
+from questgame.game_items import weapons, armor, items, spells, traps, potions
+from questgame.game_items.standard_items import Inventory, Chest
+from questgame.players import character_classes, players
+from questgame.common import base_classes
+from questgame.common.utils import Helpers
+from questgame.common.rules import GameRules
 
 class Test_Others(unittest.TestCase):
     

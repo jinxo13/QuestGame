@@ -1,0 +1,24 @@
+CharacterIntent {name}
+CharacterIntent a {name}
+
+DescribeItemIntent describe {item}
+
+WhereIntent where am I
+
+LaunchIntent launch
+
+StartGameIntent start a new game
+StartGameIntent new game
+
+OpenIntent open {oitem}
+OpenIntent open the {oitem}
+CloseIntent close {oitem}
+CloseIntent close the {oitem}
+
+SearchIntent search {sitem}
+SearchIntent search the {sitem}
+
+CastIntent cast {spell} at {item}
+CastIntent cast {spell} spell at {item}
+
+PickLockIntent pick lock

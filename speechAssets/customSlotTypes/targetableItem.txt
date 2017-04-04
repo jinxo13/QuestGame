@@ -1,0 +1,7 @@
+monster
+goblin
+orc
+wall
+door
+chest
+tree

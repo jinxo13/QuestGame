@@ -30,6 +30,8 @@ class AlexaRequest(object):
             slot_data[var] = slots[i][var]
         self.__request['request']['intent']['slots'] = slot_data
     def post(self, session_id = False):
+        if not session_id or session_id != self.session_id:
+            self.__set_session_attributes({})
         request_data = self.__get_request_json(session_id)
         response = self.app.post("/", data=request_data, content_type='application/json')
         data = json.loads(response.data)
@@ -91,6 +93,6 @@ class AlexaRequest(object):
             self.__set_session_id(session_id)
             self.__set_new_session(True)
         else:
-            self.__set_session_id(self.__get_new_session_id())
+            self.__set_session_id(int(self.__get_new_session_id()))
             self.__set_new_session(False)
         return json.dumps(self.__request)

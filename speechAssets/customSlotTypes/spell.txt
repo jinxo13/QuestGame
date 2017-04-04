@@ -1,0 +1,7 @@
+fireball
+open
+close
+lock
+unlock
+heal
+harm

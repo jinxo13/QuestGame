@@ -1,10 +1,10 @@
 ﻿import unittest
-from players.players import Player
-from common.rules import GameRules, ATTRIBUTES
-from common.dice import Dice
-from common.utils import Helpers
-from players import skills, character_classes
-from game_items import weapons, armor
+from questgame.players.players import Player
+from questgame.common.rules import GameRules, ATTRIBUTES
+from questgame.common.dice import Dice
+from questgame.common.utils import Helpers
+from questgame.players import skills, character_classes
+from questgame.game_items import weapons, armor
 
 class test_stats(unittest.TestCase):
     def test_Dice(self):

@@ -1,8 +1,9 @@
 ﻿import unittest
 import boto3
 import os
-from db import database
-from db.save_load_game import GameManager
+from questgame.db import database
+from questgame.interface.controller import LoadManager
+from questgame.common import test_constants
 
 class Test_dynamodb(unittest.TestCase):
     
@@ -10,25 +11,25 @@ class Test_dynamodb(unittest.TestCase):
         user = 'test_user'
         db = database.db(user)
         game_state = {}
-        game_state[GameManager.STATE_ROOM] = {'x':1}
-        game_state[GameManager.STATE_DOOR] = {'x':2}
-        game_state[GameManager.STATE_PLAYER] = {'x':3}
+        game_state[LoadManager.STATE_ROOM] = {'x':1}
+        game_state[LoadManager.STATE_DOOR] = {'x':2}
+        game_state[LoadManager.STATE_PLAYER] = {'x':3}
 
-        gm = GameManager(user)
+        gm = LoadManager(user)
         save_name = 'game1'
         gm.save_game(save_name, game_state)
         result = gm.load_game(save_name)
-        self.assertEqual(result[GameManager.STATE_ROOM],{'x':1})
-        self.assertEqual(result[GameManager.STATE_DOOR],{'x':2})
-        self.assertEqual(result[GameManager.STATE_PLAYER],{'x':3})
+        self.assertEqual(result[LoadManager.STATE_ROOM],{'x':1})
+        self.assertEqual(result[LoadManager.STATE_DOOR],{'x':2})
+        self.assertEqual(result[LoadManager.STATE_PLAYER],{'x':3})
 
-        gm.save_state(save_name, GameManager.STATE_DOOR, {'y':1})
-        result = gm.load_state(save_name, GameManager.STATE_DOOR)
+        gm.save_state(save_name, LoadManager.STATE_DOOR, {'y':1})
+        result = gm.load_state(save_name, LoadManager.STATE_DOOR)
         self.assertEqual(result,{'y':1})
 
         gm.delete_game(save_name)
         result = gm.load_game(save_name)
-        self.assertIsNone(result[GameManager.STATE_ROOM])
+        self.assertIsNone(result)
 
         db.delete_user(user)
 
@@ -75,6 +76,8 @@ class Test_dynamodb(unittest.TestCase):
         db = database.db('test_user')
         dynamodb = db._connect()
 
+        self.assertTrue(test_constants.UNITTEST_DB_LOCAL)
+
         try:
             table = dynamodb.Table('GameData')
             table.delete()
@@ -114,7 +117,7 @@ class Test_dynamodb(unittest.TestCase):
         self.assertFalse(db.does_user_exist())
 
         #Load some data
-        db.store_json('test','./config/rooms.json')
+        db.store_json('test',os.path.join('.','src','config','rooms.json'))
 
         self.assertTrue(db.does_user_exist())
 

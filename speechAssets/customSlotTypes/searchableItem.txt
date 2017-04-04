@@ -1,0 +1,5 @@
+room
+chest
+straw
+body
+dead body
