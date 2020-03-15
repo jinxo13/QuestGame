@@ -1,35 +1,17 @@
 ﻿from questgame.db import database
 import logging
 from questgame import rooms
-from questgame.players.players import Player, character_classes
+from questgame.players.players import Thief, Mage, Fighter, Ranger, Player, Actions
 from questgame.common.errors import QuestGameError
 
 logger = logging.getLogger()
-
-class Actions(object):
-    PUSH = 0
-    PULL = 1
-    SEARCH = 2
-    OPEN = 3
-    CLOSE= 4
-    LOCK = 5
-    UNLOCK = 6
-    CAST = 7
-    THROW = 8
-    PICK_LOCK = 9
-    WHERE = 10
-    YES = 11
-    NO = 12
-    DESCRIBE = 13
-    STRIKE = 14
-    SHOOT = 15
 
 class UserState(object):
     def __init__(self, user, save_name):
         self.__user_id = user
         self.__lm = LoadManager(user)
         self.state = self.__lm.get_empty_state()
-        self.room = None
+        self.__room = None
         self.__player = None
         self.__save_name = save_name
         self.__is_active = False
@@ -37,9 +19,15 @@ class UserState(object):
     @property
     def player(self): return self.__player
     @property
+    def room(self): return self.__room
+    @property
     def is_active(self): return self.__is_active
 
     def set_player(self, player): self.__player = player
+
+    def set_room(self, room):
+        self.__room = room
+        room.user_id = self.__user_id
 
     def save_player(self):
         try:
@@ -47,7 +35,8 @@ class UserState(object):
         except Exception, e:
             logger.exception('message')
             raise QuestGameError(QuestGameError.SAVE_PLAYER_FAILED)
-
+    def delete_game(self):
+        result = self.__lm.delete_game(self.__save_name)
     def load_game(self):
         try:
             result = self.__lm.load_game(self.__save_name)
@@ -60,7 +49,13 @@ class UserState(object):
         player_state = self.state[LoadManager.STATE_PLAYER]
         self.__player = Player.create_from_state(player_state)
         #TODO fix
-        self.room = rooms.CellRoom()
+        current_room = 'CellRoom'
+        if current_room in self.state[LoadManager.STATE_ROOM]:
+            room_state = self.state[LoadManager.STATE_ROOM][current_room]
+            self.set_room(rooms.room.Room.create_from_state(room_state, self.__player))
+        else:
+            self.set_room(rooms.room.CellRoom(self.__player))
+
         self.__is_active = True
 
     def save_game(self):
@@ -78,8 +73,16 @@ class UserState(object):
     def save_room(self):
         """Saves the state of the specified room"""
         try:
-            self.__lm.save_room(self.__save_name, room.name, room.state)
+            self.__lm.save_room(self.__save_name, self.room.name, self.room.get_state())
             return True, None
+        except Exception, e:
+            logger.exception('message')
+            return False, GameManager.UNKNOWN_ERROR
+
+    def load_room(self, room_name):
+        """Loads the state of the specified room"""
+        try:
+            return self.__lm.load_room(self.__save_name, room_name)
         except Exception, e:
             logger.exception('message')
             return False, GameManager.UNKNOWN_ERROR
@@ -94,15 +97,22 @@ class GameManager(object):
     def __init__(self):
         self.__user_states = {}
 
-    def is_game_started(self, user_id): return user_id in self.__user_states.keys()
+    def user_exit(self, user_id):
+        if user_id in self.__user_states.keys():
+            del self.__user_states[user_id]
 
-    def get_player(name_text):
+    def is_game_started(self, user_id):
+        """User is currently playing"""
+        return user_id in self.__user_states.keys()
+
+    def create_player(self, name_text):
         player = None
-        if name.lower() == 'thief': player = Player(character_classes.Thief())
-        elif name.lower() == 'mage': player = Player(character_classes.Mage())
-        else: player = Player(character_classes.Thief())
+        if name_text.lower() == 'thief': player = Thief()
+        elif name_text.lower() == 'mage': player = Mage()
+        elif name_text.lower() == 'fighter': player = Fighter()
+        elif name_text.lower() == 'ranger': player = Ranger()
+        else: player = Thief()
         return player
-
 
     def get_user(self, user, save_name=None):
         if not user in self.__user_states.keys():
@@ -112,11 +122,13 @@ class GameManager(object):
         return self.__user_states[user]
 
     def continue_game(self, user_id):
-        if not self.is_game_started(user_id):
-            #Need to load a game
-            raise NotImplementedError()
         user = self.get_user(user_id)
         return user.room.enter()
+
+    def delete_game(self, user_id, save_name):
+        user = self.get_user(user_id, save_name)
+        user.delete_game()
+        del self.__user_states[user_id]
 
     def load_game(self, user_id, save_name):
         user = self.get_user(user_id, save_name)
@@ -128,7 +140,7 @@ class GameManager(object):
             user = self.get_user(user_id, 'test')
             user.set_player(player)
             user.save_game()
-            user.room = rooms.CellRoom()
+            user.set_room(rooms.CellRoom(player))
             return user.room.start()
         except QuestGameError, e: raise e
         except Exception, e:
@@ -137,31 +149,30 @@ class GameManager(object):
 
     def perform_spell(self, user_id, spell_text, item_text=None):
         """Perform a spell"""
-        room = self.get_user().room
-        return room.cast(spell_text, item_text)
+        user = self.get_user(user_id)
+        room = user.room
+        result = room.do_action(Actions.CAST, item_text, spell_text=spell_text)
+        user.save_player()
+        user.save_room()
+        return result
 
     def perform_throw(self, user_id, item_text, target_text):
         """Throw your toys"""
-        room = self.get_user().room
-        return room.throw(item_text, target_text)
+        user = self.get_user(user_id)
+        room = user.room
+        result = room.do_action(Actions.THROW, item_text, target_text=target_text)
+        user.save_player()
+        user.save_room()
+        return result
 
-    def perform_action(self, user_id, action, item_text=None):
+    def perform_action(self, user_id, action, item_text=None, amount=0):
         """Perform an action"""
-        room = self.get_user().room
-        if action == Actions.PULL: return room.pull(item_text)
-        elif action == Actions.PUSH: return room.push(item_text)
-        elif action == Actions.SEARCH: return room.search(item_text)
-        elif action == Actions.CAST: raise NotImplementedError('Cast is not implemented in perform_action. Call perform_spell instead.')
-        elif action == Actions.CLOSE: return room.close(item_text)
-        elif action == Actions.OPEN: return room.open(item_text)
-        elif action == Actions.DESCRIBE: return room.describe(item_text)
-        elif action == Actions.LOCK: return room.lock(item_text)
-        elif action == Actions.NO: return room.reply_no()
-        elif action == Actions.YES: return room.reply_yes()
-        elif action == Actions.PICK_LOCK: return room.pick_lock(item_text)
-        elif action == Actions.SHOOT: return room.shoot(item_text)
-        elif action == Actions.STRIKE: return room.strike(item_text)
-        return helpers.render_common_template('no_action')
+        user = self.get_user(user_id)
+        room = user.room
+        result = room.do_action(action, item_text, amount=amount)
+        user.save_player()
+        user.save_room()
+        return result
 
 class LoadManager(object):
     """description of class"""
@@ -179,9 +190,10 @@ class LoadManager(object):
     def __init__(self, user):
         self.__user = user
 
-    def does_user_exist(self):
+    def does_user_game_exist(self, save_name):
         db = database.db(self.__user)
-        return db.does_user_exist()
+        if not db.does_user_exist(): return False
+        return not self.load_game(save_name) is None
 
     def delete_game(self, save_name):
         db = database.db(self.__user)
@@ -204,7 +216,9 @@ class LoadManager(object):
 
     def load_room(self, save_name, room_name):
         db = database.db(self.__user)
-        return db.get_item('{}.{}.{}'.format(save_name, LoadManager.STATE_ROOM, room_name))
+        result = self.load_state(save_name, LoadManager.STATE_ROOM)
+        if result is None or room_name not in result.keys(): return None
+        return result[room_name]
 
     def save_player(self, save_name, state):
         db = database.db(self.__user)

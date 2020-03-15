@@ -11,6 +11,10 @@ class Helpers(object):
         return True
 
     @staticmethod
+    def is_string(s):
+        return isinstance(s, basestring)
+
+    @staticmethod
     def class_for_name(module_name, class_name):
         """Load class by name"""
         # load the module, will raise ImportError if module cannot be loaded
@@ -20,7 +24,14 @@ class Helpers(object):
         return c
 
     @staticmethod
-    def create_instances(cls, num):
+    def apply_on_all(seq, method, *args, **kwargs):
         result = []
-        for i in range(num): result.append(cls())
+        for obj in seq:
+            result.append(getattr(obj, method)(*args, **kwargs))
         return result
+
+    @staticmethod
+    def get_dict_value(dict, key, default):
+        if key in dict.keys():
+            return dict[key]
+        return default

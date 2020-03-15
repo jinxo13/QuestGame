@@ -3,8 +3,8 @@ from jinja2 import ChoiceLoader
 import unittest
 import json
 from flask import Flask
-from questgame.interface.alexa.alexa_control import app
-from questgame.interface.alexa.utils import Helpers
+from alexa_control import app
+from questgame.interface.alexa.utils import ReplyHelpers
 import logging, sys
 from alexa_test_helpers import AlexaRequest, AlexaResponse
 import os
@@ -46,6 +46,11 @@ class Test_alexa_interface(unittest.TestCase):
         compare_resp = os.path.join(TTS_DIR,check_dir,'{} - RESP.mp3'.format(resp_file))
         return filecmp.cmp(saved_resp, compare_resp)
 
+    def test_Create_Response(self):
+        self.text_to_wav("Hi. This is Alexa. Hungry ones it is dinner time!.",'dinner_time')
+        self.text_to_wav("Hi. This is Alexa. Dinner is served!.",'dinner_time2')
+        return True
+
     def test__ALEXA_REMOTE_utterances(self):
         #request = AlexaRequest(self.app, user_id='fred', application_id='quest_game')
         #request.set_intent('SearchIntent')
@@ -53,6 +58,7 @@ class Test_alexa_interface(unittest.TestCase):
         #response = request.post()
 
         self.ask('welcome1','open {}'.format(constants.GAME_INVOKE))
+        #self.ask('choose','a thief')
         #self.ask('describe_mage', 'describe mage')
         #self.ask('describe_thief', 'describe thief')
         #self.ask('describe_ranger', 'describe ranger')
@@ -63,7 +69,9 @@ class Test_alexa_interface(unittest.TestCase):
         #self.ask('close_door', 'open door')
         #self.ask('pick_lock', 'pick lock')
         #self.ask('search_body', 'search dead body')
-        self.ask('search_room', 'search room')
+        #self.ask('search_room', 'search room')
+        #self.ask('describe_dagger', 'describe dagger')
+        self.ask('describe_rat', 'describe rat')
 
     def test__ALEXA_REMOTE_intent_response(self):
         #Check skill test server running
@@ -105,26 +113,34 @@ class Test_alexa_interface(unittest.TestCase):
         request.set_intent('StartGameIntent')
         response = request.post()
         print response.data
-        self.assertEqual(Helpers.render_descr_template('are_you_sure'), response.get_output_text())
+        self.assertEqual(ReplyHelpers.render_descr_template('are_you_sure'), response.get_output_text())
 
         #Pass session_id to continue session
         request.set_intent('AMAZON.YesIntent')
         response = request.post(request.session_id)
         print response.data
-        self.assertTrue(Helpers.render_descr_template('welcome') in response.get_output_text())
+        self.assertTrue(ReplyHelpers.render_descr_template('welcome') in response.get_output_text())
 
         #Prompt based on starting a new game, different when you have a saved game
-        self.assertTrue(Helpers.render_descr_template('no_games') in response.get_output_text())
-        self.assertTrue(Helpers.render_descr_template('no_games') in response.get_reprompt_text())
+        #self.assertTrue(ReplyHelpers.render_descr_template('no_games') in response.get_output_text())
+        #self.assertTrue(ReplyHelpers.render_descr_template('no_games') in response.get_reprompt_text())
+
+        #Describe Thief
+        request.set_intent('DescribeItemIntent')
+        request.set_slots([request.create_slot('ditem','thief')])
+        response = request.post(request.session_id)
+        print response.get_output_text()
+        self.assertTrue(ReplyHelpers.render_descr_template('descr_thief') in response.get_output_text())
+
         return request
 
     def test__ALEXA_LOCAL_character_reponse(self):
-        request = self.test__ALEXA_start_game()
+        request = self.test__ALEXA_LOCAL_start_game()
         request.set_intent('CharacterIntent')
         request.set_slots([request.create_slot('name','mage')])
         response = request.post(request.session_id)
         print response.data
-        self.assertEqual(response.get_output_text(),Helpers.render_action_template('char_choice',char='mage'))
+        self.assertTrue(ReplyHelpers.render_action_template('char_choice',char='mage') in response.get_output_text())
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,24 +1,53 @@
-CharacterIntent {name}
 CharacterIntent a {name}
-
-DescribeItemIntent describe {item}
-
+CharacterIntent {name}
+DescribeItemIntent describe {ditem}
+DescribeItemIntent describe the {ditem}
+PickupIntent pick up {ditem}
+PickupIntent pick up the {ditem}
+PickupIntent get the {ditem}
+PickupIntent get {ditem}
+DropIntent drop the {ditem}
 WhereIntent where am I
-
-LaunchIntent launch
-
+WhereIntent look around
 StartGameIntent start a new game
-StartGameIntent new game
-
+PullIntent pull the {ditem}
+PullIntent pull on the {ditem}
+PushIntent push the {ditem}
+PushIntent push on the {ditem}
 OpenIntent open {oitem}
 OpenIntent open the {oitem}
 CloseIntent close {oitem}
 CloseIntent close the {oitem}
-
+UnlockIntent unlock the {oitem}
+UnlockIntent unlock {oitem}
+LockIntent lock the {oitem}
+LockIntent lock {oitem}
 SearchIntent search {sitem}
 SearchIntent search the {sitem}
-
-CastIntent cast {spell} at {item}
-CastIntent cast {spell} spell at {item}
-
-PickLockIntent pick lock
+SearchIntent look at the {sitem}
+SearchIntent look around the {sitem}
+HelpIntent help {area}
+PickLockIntent unlock the {oitem} with lockpick
+PickLockIntent use lockpick on {oitem}
+CastTargetIntent cast {spell} at {target}
+CastTargetIntent cast {spell} spell at {target}
+CastIntent cast {spell}
+CastIntent cast {spell} spell
+CastIntent use {spell}
+CastIntent use {spell} spell
+ShootTargetIntent shoot {target}
+StrikeTargetIntent strike {target}
+StrikeTargetIntent attack {target}
+ShootIntent shoot
+StrikeIntent strike
+StrikeIntent attack
+ThrowTargetIntent throw {titem} at {target}
+ThrowIntent throw {titem}
+WhatCanIDoIntent what can I do
+EquipIntent equip {eitem}
+SelectItemIntent {ditem}
+SelectItemIntent the {ditem}
+EatIntent eat {ditem}
+EatIntent eat the {ditem}
+EatIntent eat a {ditem}
+EatIntent eat an {ditem}

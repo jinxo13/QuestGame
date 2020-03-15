@@ -141,3 +141,4 @@ $RECYCLE.BIN/
 *.lnk
 *.suo
 *.suo
+.vscode/settings.json

@@ -1,15 +1,32 @@
 ﻿from questgame.common.base_classes import BaseStats, Modifiers
-from questgame.common.rules import GameRules, ATTRIBUTES
+from questgame.common.rules import GameRules, ATTRIBUTES, Effects
 from questgame.common.dice import Dice
+from questgame.common.utils import Helpers
+from questgame.interface.alexa.utils import ReplyHelpers
 
 class Spell(Modifiers):
     """Spell abstract class"""
 
     @staticmethod
-    def _get_stats(): return SpellStats._STATS
+    def create_from_state(state):
+        cls = Helpers.class_for_name(state['module'],state['class'])
+        inst = cls()
+        return inst
+    
+    def get_state(self):
+        result = {}
+        result['class'] = self.__class__.__name__
+        result['module'] = self.__module__
+        return result
+
+    @staticmethod
+    def _get_stats(): return SpellStats
 
     @property
     def level(self): return self.__level
+
+    @property
+    def description(self): return BaseStats.get_matches(self)[0]
 
     """Roll to attack + spell modifier, Defend with saving spell throw"""
     def get_spell_attack_modifier(self, caster):
@@ -21,42 +38,62 @@ class Spell(Modifiers):
         super(Spell,self).__init__(SpellStats)
         self.__level = SpellStats.get_level(self)
     
-    def cast(self, caster, target): raise NotImplementedError()
+    def cast(self, caster, target):
+        if not caster.can_cast_spell(self):
+            return False
+        caster.add_mana(-self.level)
+        if self._hit(caster, target):
+            self._effect(caster, target)
+        return True
 
-class HarmfulSpell(Spell):
+    def _hit(self, caster, target):
+        return True
+
+    def _effect(self, caster, target):
+        raise NotImplementedError()
+
+    def is_match(self, text):
+        if text is None: return False
+        for match in BaseStats.get_matches(self):
+            if text.lower() == match or text.lower() == match+'s':
+                return True
+        return False
+
+class DamageSpell(Spell):
     @property
     def saving_throw_attribute(self): return ATTRIBUTES.DEXTERITY
 
-    def _damage(self):
+    def _damage(self, caster):
         dice = SpellStats.get_damage_dice(self)
-        return Dice.roll_dice(dice[0],dice[1])
+        return Dice.roll(dice[0],dice[1])
 
-    def cast(self, caster, target):
-        defense_roll, defense_mod = GameRules.roll_saving_spell_throw(self, target)
-        attack_roll, attack_mod = GameRules.roll_spell_attack_score(self, caster)
+    def _hit(self, caster, target):
+        defense_roll = GameRules.roll_saving_spell_throw(self, target)
+        attack_roll = GameRules.roll_spell_attack_score(self, caster)
+        caster.notify_observers_log("{} - cast {}".format(caster.class_name, self.class_name))
+        caster.notify_observers_log('Defense: {}({}), Attack: {}({})'.format(defense_roll.total,defense_roll.roll,attack_roll.total,attack_roll.roll))
 
-        caster.notify_observers('LOG', "{} - cast {}".format(caster.class_name, self.class_name))
-        caster.notify_observers('LOG','Defense: {}({}), Attack: {}({})'.format(defense_roll+defense_mod,defense_roll,attack_roll+attack_mod,attack_roll))
-
-        hit = True
-        dmg = 0
-        if defense_roll == 20:
-            #miss
-            hit = False
-        elif defense_roll == 1:
-            defense_mod = 0
-        if hit:
-            if attack_roll + attack_mod >= defense_roll + defense_mod:
-                #hit
-                dmg = self._damage(caster)
+        hit = defense_roll.roll < 20 and attack_roll.total >= defense_roll.total
         if not hit:
-            caster.notify_observers('LOG', "{} - {} missed {}".format(caster.class_name, self.class_name, target.class_name))
-        else:
-            caster.notify_observers('LOG', "{} {} hit! Damage {}".format(caster.class_name, self.class_name, dmg))
-            target.wound(dmg)
-            if target.is_dead:
-                caster.notify_observers('LOG', "{} - DIED!".format(target.class_name))
+            caster.notify_observers_log("{} - {} missed {}".format(caster.class_name, self.class_name, target.class_name))
+            caster.notify_observers_reply(ReplyHelpers.render_action_template(caster.get_reply_key('cast_miss'), spell_text=self.description,
+                attacker_name=caster.name, defender_name=target.name, mana_points=caster.mana_points))
+        return hit
 
+    def _effect(self, caster, target):
+        dmg = self._damage(caster)
+        if dmg == 0:
+            caster.notify_observers_reply(ReplyHelpers.render_action_template(caster.get_reply_key('cast_defend'), spell_text=self.description,
+                attacker_name=caster.name, defender_name=target.name, damage=dmg, hit_points=target.hit_points, mana_points=caster.mana_points))
+        else:
+            caster.notify_observers_log("{} {} hit! Damage {}".format(caster.class_name, self.class_name, dmg))
+            caster.notify_observers_reply(ReplyHelpers.render_action_template(caster.get_reply_key('cast_hit'), spell_text=self.description,
+                attacker_name=caster.name, defender_name=target.name, damage=dmg, hit_points=target.hit_points, mana_points=caster.mana_points))
+            target.affect(self, Effects.Damage, dmg)
+
+class FireballSpell(DamageSpell):
+    def _damage(self, caster):
+        return DamageSpell._damage(self, caster) * min(caster.level, 10)
 
 class EffectSpell(Spell):
     """Attack spell has a difficulty class, Defend with saving spell throw"""
@@ -68,56 +105,36 @@ class EffectSpell(Spell):
     @property
     def saving_throw_attribute(self): return ATTRIBUTES.DEXTERITY
 
-    def _effect(self, caster, target):
-        """Apply spell effect"""
-        raise NotImplementedError()
-
-    def cast(self, caster, target):
+    def _hit(self, caster, target):
+        #If casting on one self it always hits
+        if caster == target: return True
         defense_target = self.spell_difficulty_class(caster)
-        saving_roll, saving_mod = GameRules.roll_saving_spell_throw(self, target)
-        caster.notify_observers('LOG','Defense: {}, Saving: {}({})'.format(defense_target,saving_roll+saving_mod,saving_roll))
-        hit = True
-        if saving_roll == 20:
-            #miss
-            hit = False
-        elif saving_roll == 1:
-            defense_mod = 0
-        if hit:
-            if saving_roll + saving_mod < defense_target:
-                #hit
-                self._effect(caster, target)
+        saving_roll = GameRules.roll_saving_spell_throw(self, target)
+        from questgame.players.players import Player
+        if isinstance(target, Player):
+            save = saving_roll.total
+            caster.notify_observers_log('Defense: {}, Saving: {}({})'.format(defense_target, saving_roll.total, saving_roll.roll))
+        else:
+            save = target.spell_resistance
+            caster.notify_observers_log('Defense: {}, Saving: {}'.format(defense_target, save))
+        hit = save < 20 and save <= defense_target
+        if not hit:
+            caster.notify_observers_log('{} failed on {}'.format(self.__class__.__name__,target.__class__.__name__))
+        return hit
 
 class MentalSpell(Spell):
     @property
     def saving_throw_attribute(self): return ATTRIBUTES.WISDOM
 
 class OpenSpell(EffectSpell):
-    def cast(self, caster, target):
-        caster.notify_observers('LOG','{} successfull on {}'.format(self.__class__.__name__,target.__class__.__name__))
-        self._effect(caster, target)
-
     def _effect(self, caster, target):
-        target.open(caster)
+        target.open_with_spell(self, caster)
 
 class CloseSpell(EffectSpell):
-    def cast(self, caster, target):
-        caster.notify_observers('LOG','{} successfull on {}'.format(self.__class__.__name__,target.__class__.__name__))
-        self._effect(caster, target)
-
     def _effect(self, caster, target):
-        target.close(caster)
+        target.close_with_spell(self, caster)
 
 class UnlockSpell(EffectSpell):
-    def cast(self, caster, target):
-        resistence = target.spell_resistance
-        defense_target = self.spell_difficulty_class(caster)
-
-        if resistence <= defense_target:
-            caster.notify_observers('LOG','{} successfull attempt on {}, DC: {}, Resistence: {}'.format(self.__class__.__name__,target.__class__.__name__,defense_target, resistence))
-            self._effect(caster, target)            
-        else:
-            caster.notify_observers('LOG','{} failed attempt on {}, DC: {}, Resistence: {}'.format(self.__class__.__name__,target.__class__.__name__,defense_target, resistence))
-
     def _effect(self, caster, target):
         target.unlock_with_spell(self, caster)
 
@@ -129,29 +146,18 @@ class HarmSpell(EffectSpell):
     @property
     def saving_throw_attribute(self): return ATTRIBUTES.CONSITUTION
 
-    def cast(self, caster, target):
-        if target.is_undead:
-            HealSpell().cast(caster, target)
-        else:
-            EffectSpell.cast(self, caster, target)
-    
     def _effect(self, caster, target):
-        target.wound(10*min(caster.level,15))
+        if target.is_undead:
+            target.affect(self, Effects.Heal, 10*min(caster.level,15))
+        else:
+            target.affect(self, Effects.Damage, 10*min(caster.level,15))
 
 class HealSpell(EffectSpell):
-
-    def cast(self, caster, target):
-        if target.is_undead:
-            HarmSpell().cast(caster, target)
-        else:
-            self._effect(caster, target)
-    
     def _effect(self, caster, target):
-        target.heal(10*min(caster.level,15))
-
-class FireballSpell(HarmfulSpell):
-    def _damage(self, caster):
-        return HarmfulSpell._damage(self) * min(caster.level, 10)
+        if target.is_undead:
+            target.wound(10*min(caster.level,15))
+        else:
+            target.heal(10*min(caster.level,15))
 
 class SpellStats(BaseStats):
     _AC_CLASS = BaseStats._AC_CLASS
@@ -160,20 +166,28 @@ class SpellStats(BaseStats):
     _NAME = BaseStats._NAME
     _ATTR_MODIFIERS = BaseStats._ATTR_MODIFIERS
     _SKILL_MODIFIERS = BaseStats._SKILL_MODIFIERS
+    _NAME_MATCHES = BaseStats._NAME_MATCHES
     _DAMAGE = 1
     _LEVEL = 2
 
     _STATS = {
-        FireballSpell: { _AC_CLASS:0, _LEVEL:1, _DAMAGE:[1,6], _WEIGHT:0, _COST:'10' },
-        OpenSpell: { _AC_CLASS:0, _LEVEL:1, _WEIGHT:0, _COST:'10' },
-        CloseSpell: { _AC_CLASS:0, _LEVEL:1, _WEIGHT:0, _COST:'10' },
-        UnlockSpell: { _AC_CLASS:0, _LEVEL:1, _WEIGHT:0, _COST:'10' },
-        LockSpell: { _AC_CLASS:0, _LEVEL:1, _WEIGHT:0, _COST:'10' },
-        HealSpell: { _AC_CLASS:0, _LEVEL:1, _WEIGHT:0, _COST:'10' },
-        HarmSpell: { _AC_CLASS:0, _LEVEL:1, _WEIGHT:0, _COST:'10' }
+        FireballSpell: { _NAME_MATCHES: ['fireball','fireball spell'], _AC_CLASS:0, _LEVEL:1, _DAMAGE:[1,6], _WEIGHT:0, _COST:'10' },
+        OpenSpell: { _NAME_MATCHES: ['open','open spell'], _AC_CLASS:0, _LEVEL:1, _WEIGHT:0, _COST:'10' },
+        CloseSpell: { _NAME_MATCHES: ['close','close spell'], _AC_CLASS:0, _LEVEL:1, _WEIGHT:0, _COST:'10' },
+        UnlockSpell: { _NAME_MATCHES: ['unlock','unlock spell'], _AC_CLASS:0, _LEVEL:1, _WEIGHT:0, _COST:'10' },
+        LockSpell: { _NAME_MATCHES: ['lock','lock spell'], _AC_CLASS:0, _LEVEL:1, _WEIGHT:0, _COST:'10' },
+        HealSpell: { _NAME_MATCHES: ['heal','heal spell'], _AC_CLASS:0, _LEVEL:1, _WEIGHT:0, _COST:'10' },
+        HarmSpell: { _NAME_MATCHES: ['harm','harm spell'], _AC_CLASS:0, _LEVEL:1, _WEIGHT:0, _COST:'10' }
         }
     @staticmethod
     def get_damage_dice(spell): return SpellStats._STATS[spell.__class__][SpellStats._DAMAGE]
     @staticmethod
     def get_level(spell): return SpellStats._STATS[spell.__class__][SpellStats._LEVEL]
 
+    @staticmethod
+    def get_spell_by_text(spell_text):
+        for key in SpellStats._STATS.keys():
+            spell = key()
+            if spell.is_match(spell_text):
+                return spell
+        return None

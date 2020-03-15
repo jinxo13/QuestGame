@@ -33,7 +33,193 @@ open_item_success: |
 
 pull_chest: |
     You pull the chest around for a while.
-    It's in a slightly different position now and looks to be enjoying the new perspective.
+    It's in a slightly different position now and looks to have a new lease on life.
 
 pull_cannot: |
-    I can't pull that
+    You can't pull that.
+
+drink_cannot: |
+    You can't drink the {{item_text}}.
+
+    spell_cannot: |
+    You don't recognise that spell.
+spell_cast: |
+    You cast the {{spell_name}} spell at the {{target_name}}. You have {{mana_points}} mana remaining.
+spell_not_proficient: |
+    You don't know the {{spell_name}} spell.
+spell_too_advanced: |
+    You can't cast that, the {{spell_name}} spell is too advanced for your current charcter level.
+spell_not_enough_mana: |
+    You don't have enough mana to cast the {{spell_name}} spell.
+spell_already_known: |
+    You already know the {{spell_name}} spell.
+spell_too_hard: |
+    You aren't advanced enough to learn the {{spell_name}} spell.
+spell_learned: |
+    You learn the {{spell_name}} spell.
+not_spell: |
+    You can't learn that, {{spell_name}} is not a spell.
+spell_cannot_cast: |
+    You can't cast the {{spell_name}} spell.
+
+already_looted: |
+    You've already looted this body.
+
+cannot_act: |
+    You can't do that at the moment. You are {{condition}}.
+
+throw_at_item: |
+    You throw your {{weapon_text}} at the {{item_text}}.
+throw_item_hit: |
+    Your {{item_text}} hits the {{target_text}}, and falls to the {{floor_text}}.
+throw_item_miss: |
+    Your {{item_text}} misses the {{target_text}}, and falls to the {{floor_text}}.
+not_carrying: |
+    You're not carrying {{item_prefix}} {{item_text}} to {{action}}.
+not_carrying_enough: |
+    You're not carrying enough {{item_text}} to {{action}}.
+not_carrying_unknown: |
+    You couldn't {{action}} that. You're not carrying that item.
+no_such_target: |
+    I couldn't find an item or monster to throw the {{item_text}} at.
+player_wounded: |
+    You now have {{hit_points}} out of {{max_hit_points}} health.
+
+player_healed: |
+    You now have {{hit_points}} out of {{max_hit_points}} health.
+
+no_monster_to_battle: |
+    There is no enemy to battle.
+
+monster_killed: |
+    <say-as interpret-as="interjection">Oh dear</say-as> You died.
+    Zeus sighs and resurrects you. You awake back in your cell, but all your sweet loot is gone.
+
+battle_invalid_action: |
+   You can't do that right now, there's a {{monster}} to deal with first!
+
+player_drink: |
+    You drink the {{item_text}}.
+
+monster_drink: |
+    The {{attacker_name}} drinks {{item_prefix}} {{item_text}}.
+
+player_critical_strike: |
+    You critically hit the {{defender_name}} with your {{attack_type}}, and do {{damage}} damage. The {{defender_name}} has {{hit_points}} health remaining.
+
+player_strike: |
+    You hit the {{defender_name}} with your {{attack_type}}, and do {{damage}} damage. The {{defender_name}} has {{hit_points}} health remaining.
+
+player_throw_strike: |
+    You throw your {{attack_type}}, it hits the {{defender_name}} and does {{damage}} damage. The {{defender_name}} has {{hit_points}} health remaining.
+
+player_throw_critical_strike: |
+    You throw your {{attack_type}}, it critically hits the {{defender_name}} and does {{damage}} damage. The {{defender_name}} has {{hit_points}} health remaining.
+
+monster_strike: |
+    The {{attacker_name}} hits you with it's {{attack_type}} and does {{damage}} damage. You have {{hit_points}} health remaining.
+
+monster_critical_strike: |
+    The {{attacker_name}} critically hits you with it's {{attack_type}} and does {{damage}} damage. You have {{hit_points}} health remaining.
+
+monster_throw_strike: |
+    The {{attacker_name}} throws a {{attack_type}}, it hits you and does {{damage}} damage. You have {{hit_points}} health remaining.
+
+monster_throw_strike: |
+    The {{attacker_name}} throws a {{attack_type}}, it critically hits you and does {{damage}} damage. You have {{hit_points}} health remaining.
+
+not_throwable: |
+    You can't throw the {{weapon_text}}.
+no_ammo: |
+    You have no {{ammo_text}} for your {{weapon_text}}.
+
+player_miss:
+    You miss the {{defender_name}} with your {{attack_type}}.
+player_critical_miss:
+    You critically miss the {{defender_name}} with your {{attack_type}}.
+player_throw_miss:
+    You throw your {{attack_type}}, it misses the {{defender_name}}.
+player_throw_critical_miss:
+    You throw your {{attack_type}}, it critically misses the {{defender_name}}.
+monster_miss: |
+    The {{attacker_name}} misses you with it's {{attack_type}}.
+monster_critical_miss: |
+    The {{attacker_name}} critically misses you with it's {{attack_type}}.
+monster_throw_miss: |
+    The {{attacker_name}} throws a {{attack_type}}, it misses you.
+monster_throw_critical_miss: |
+    The {{attacker_name}} throws a {{attack_type}}, it critically misses you.
+player_cast_hit: |
+    You cast a {{spell_text}} spell, it hits and does {{damage}} damage to the {{defender_name}}. The {{defender_name}} has {{hit_points}} health remaining. You have {{mana_points}} mana remaining.
+monster_cast_hit: |
+    The {{attacker_name}} casts a {{spell_text}} spell, it hits and does {{damage}} damage to you. You have {{hit_points}} health remaining.
+player_cast_defend: |
+    You cast a {{spell_text}} spell, the {{defender_name}} avoids the {{spell_text}}. You have {{mana_points}} mana remaining.
+monster_cast_defend: |
+    The {{attacker_name}} casts a {{spell_text}} spell, you avoid the {{spell_text}}.
+player_cast_miss: |
+    You cast a {{spell_text}} spell, it misses the {{defender_name}}. You have {{mana_points}} mana remaining.
+player_stunned: |
+    You are stunned or unconscious and can't attack.
+monster_stunned: |
+    The {{attacker_name}} is stunned or unconscious and can't attack.
+monster_detected: |
+    Oh no, a {{monster_name}} has appeared.
+    You react first.
+cast_item_miss: |
+    You cast a {{spell_text}} spell, it misses the {{item_text}}. You have {{mana_points}} mana remaining.
+cast_item_hit: |
+    You cast a {{spell_text}} spell, it hits the {{item_text}}. You have {{mana_points}} mana remaining.
+cast_item_no_effect: |
+    You cast a {{spell_text}} spell on the {{item_text}}. It has no effect. You have {{mana_points}} mana remaining.
+cast_no_effect: |
+    You cast a {{spell_text}} spell on the {{target_text}}. It has no effect. You have {{mana_points}} mana remaining.
+no_effect: |
+    The {{effect_item}} had no affect on the {{item_text}}.
+monster_detects_you: |
+    Oh no, a {{monster_name}} has appeared.
+    You're slow to react and it attacks.
+player_killed: |
+     <say-as interpret-as="interjection">Yay!</say-as>, You killed the {{defender_name}}
+monster_looted: |
+    Any cool stuff the {{monster_name}} had is long gone.
+player_equip_armor: |
+    You equip the {{armor_text}}.
+player_equip_weapon: |
+    You equip the {{weapon_text}}.
+player_equip_not_weapon: |
+    You can't equip the {{item_text}} it's not a weapon.
+player_equip_not_armor: |
+    You can't equip the {{item_text}} it's not armor.
+monster_equip_armor: |
+    The {{attacker_name}} equips the {{armor_text}}.
+monster_equip_weapon: |
+    The {{attacker_name}} equips the {{weapon_text}}.
+eat_food: |
+    You eat the {{item_text}}.
+eat_cannot: |
+    You can't eat the {{item_text}}.
+nothing_to_eat: |
+    You have no {{item_text}} left to eat.
+nothing_to_drink: |
+    You have no {{item_text}} left to drink.
+money_none: |
+    <say-as interpret-as="interjection">there there</say-as>, it looks like you're broke.
+money_have: |
+    You have. 
+money_count: |
+    {{amount}} {{type}} coins.
+buy_no_item: |
+    You can't buy that item here.
+buy_no_money: |
+    You don't have enough money to buy the {{item_text}}.
+buy_item: |
+    You buy the {{item_text}}.
+sell_no_item: |
+    You can't sell {{item_prefix}} {{item_text}} here.
+sell_item: |
+    You sell the {{item_text}}.
+destroyed: |
+    The {{item_text}} has been destroyed by the {{source_text}}.
+repaired: |
+    The {{item_text}} has been fully repaired by the {{source_text}}.    

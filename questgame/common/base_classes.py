@@ -5,17 +5,40 @@
     def register_observer(self, observer):
         self.__observers.append(observer)
     
-    def notify_observers(self, *args, **kwargs):
+    def deregister_observer(self, observer):
+        if observer in self.__observers:
+            self.__observers.remove(observer)
+
+    def notify_observers_reply(self, msg):
         for observer in self.__observers:
-            observer.notify(self, *args, **kwargs)
+            observer.notify('REPLY', msg)
+
+    def notify_observers_log(self, msg):
+        for observer in self.__observers:
+            observer.notify('LOG', msg)
 
 class Observer(object):
+    '''
+    Observer class used to be notified of any events from the observable object
+    '''
     def __init__(self, observable):
+        self.__observable = observable
         observable.register_observer(self)
+        self.replies = []
     
-    def notify(self, observable, *args, **kwargs):
-        if args[0] == 'LOG':
-            print(args[1])
+    def __enter__(self):
+        return self
+
+    def clear(self): self.replies = []
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.__observable.deregister_observer(self)
+
+    def notify(self, medium, msg):
+        if medium == 'LOG':
+            print(msg)
+        if medium == 'REPLY':
+            self.replies.append(msg)
 
 class BaseStats(object):
     _NAME = 100
@@ -24,29 +47,33 @@ class BaseStats(object):
     _ATTR_MODIFIERS = 103
     _AC_CLASS = 104
     _SKILL_MODIFIERS = 105
+    _NAME_MATCHES = 106
 
     @staticmethod
-    def get_name(item): return item._get_stats()[item.__class__][BaseStats._NAME]
+    def get_name(item): return item._get_stats()._STATS[item.__class__][BaseStats._NAME]
     @staticmethod
     def get_ac_class(item):
-        if BaseStats._AC_CLASS in item._get_stats()[item.__class__].keys():
-            return item._get_stats()[item.__class__][BaseStats._AC_CLASS]
+        if BaseStats._AC_CLASS in item._get_stats()._STATS[item.__class__].keys():
+            return item._get_stats()._STATS[item.__class__][BaseStats._AC_CLASS]
         else:
-            return 0
+            return item._get_stats().get_ac_class(item)
     @staticmethod
-    def get_weight(item): return item._get_stats()[item.__class__][BaseStats._WEIGHT]
+    def get_weight(item): return float(item._get_stats()._STATS[item.__class__][BaseStats._WEIGHT])
     @staticmethod
-    def get_cost(item): return item._get_stats()[item.__class__][BaseStats._COST]
+    def get_cost(item): return float(item._get_stats()._STATS[item.__class__][BaseStats._COST])
     @staticmethod
     def get_skill_modifiers(item):
-        if BaseStats._SKILL_MODIFIERS in item._get_stats()[item.__class__].keys():
-            return item._get_stats()[item.__class__][BaseStats._SKILL_MODIFIERS]
+        if BaseStats._SKILL_MODIFIERS in item._get_stats()._STATS[item.__class__].keys():
+            return item._get_stats()._STATS[item.__class__][BaseStats._SKILL_MODIFIERS]
         else: return {}
     @staticmethod
     def get_attribute_modifiers(item):
-        if BaseStats._ATTR_MODIFIERS in item._get_stats()[item.__class__].keys():
-            return item._get_stats()[item.__class__][BaseStats._ATTR_MODIFIERS]
+        if BaseStats._ATTR_MODIFIERS in item._get_stats()._STATS[item.__class__].keys():
+            return item._get_stats()._STATS[item.__class__][BaseStats._ATTR_MODIFIERS]
         else: return {}
+    @staticmethod
+    def get_matches(item):
+        return item._get_stats()._STATS[item.__class__][BaseStats._NAME_MATCHES]
 
 
 class Modifiers(object):

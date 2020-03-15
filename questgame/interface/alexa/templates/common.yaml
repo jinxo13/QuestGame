@@ -2,30 +2,127 @@ welcome: |
     Welcome to Adventure Quest.
     You can say 'Help' at anytime to get a list of commands.
 
+load_game: |
+    Loading your last game.
+
 what: |
+  
+what_reprompt: |
+    You need to say an action.
+        
+    For help or ideas on actions, you can say:
+    What can I do?. or.
+    Help.
+    
+    What would you like to do?
+
+battle_what: |
+    
+    It's your turn.
+
+battle_reprompt: |
+    
+    It's your turn.
+    You can say things like:
+    attack or strike monster.
+    cast magic missle at monster.
+    shoot at monmster.
+    throw dagger at monster.
+    
     What would you like to do?
 
 are_you_sure: |
     Are you sure you want to start a new game?
     
 where: |
-    Rats - I thought you knew!
+    <say-as interpret-as="interjection">Rats</say-as> - I thought you knew!
     
 help: |
-    You're on your own, hero!
+    For a hint in an area you can ask,
+    what can I do?
+
+    To hear the last response, say "repeat".
+
+    If you want more specific help, you can say:
+    help room,
+    help inventory,
+    help stats,
+    help fighting, or
+    help spells.
+
+help_not_found: |
+    I couldn't find specific help for that.
+
+help_inventory: |
+    Whenever you pickup anything it goes to your inventory.
+    Then you can use or describe the item.
+
+    You can say things like:
+    what am I carrying,
+    how much gold do I have?,
+    am I carrying an axe,
+    describe apple,
+    drop apple,
+    throw apple, or
+    give apple to goblin.
+
+help_stats: |
+    Your stats or attributes determine your defense or attack strength.
+    When your character goes up a level you may be able to increase an attribute, or you may gain a skill.
+    
+    You can say things like:
+    what are my stats
+    what is my strength
+    what skills do I have
+
+help_spells: |
+    Here is some help on spells.
+    You need to equip your spell slots to use magic.
+    Once used a spell needs a day to recharge.
+
+    Here are some things you can say:
+    equip healing spell,
+    remove healing spell, or
+    unequip healing spell.
+
+    To use the spell, here are some things you can say:
+    cast fireball at goblin,
+    cast open spell, or
+    use open spell.
+
+help_room: |
+    In a room or area, you can do things like:
+    search the room or an item in the room.
+    search or loot a body.
+    open or unlock items in the room.
+
+    You could say things like:
+    search the straw.
+    search the room.
+    unlock the door.
+
+help_fighting: |
+    In a fight you can do things like:
+    drink potions.
+    equip different weapons or armor.    
+    attack with weapons or spells.
+
+    You can say thinks like:
+    attack, strike, or shoot.
+    cast fireball.
+    throw dagger.
+    equip axe.
 
 choose_class: |
-    Do you want to be a Thief, a Fighter, a Mage or a Ranger?
+    What class do you want to be: a Thief, a Fighter, a Mage or a Ranger?
+
+chose_char: |
+    You chose a {{cls}}.
 
 no_games: |
     The first thing we need to do is setup your hero.
-    Hero's can be of the following classes:
-    a thief.
-    a fighter.
-    a mage.
-    a ranger.
-    You can say describe and then the class for more info.
-
+    If you want more detail you can say things like: describe thief, or describe fighter.
+    
 load_game: |
     Let's load a game.
 
@@ -33,10 +130,10 @@ bye: |
     Thanks for playing!
 
 unsure: |
-    I didn't understand that. You can say help for options.
+    I didn't understand that. You can try again, or say help.
 
 exit: |
     Are you sure you want to exit the game?
 
 no_action: |
-    It looks like that's not goping to work.
+    It looks like that's not going to work.

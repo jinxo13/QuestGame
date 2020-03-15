@@ -19,3 +19,16 @@ descr_ranger: |
     Rangers favour the long or composite bows, and are handy with short blades, and prefer light or medium armor.
     Rangers key traits are strength and dexterity, and tracking mud all over the new rug.
 
+descr_dagger: |
+    It's a dagger, hmmm it looks like someone has added a small label. The label says.
+    
+    Point away from your body.
+
+descr_rat: |
+    <say-as interpret-as="interjection">Wow!</say-as> that's one big rat. It's all claws and teeth.
+    It has {{hit_points}} health.
+
+descr_goblin: |
+    The goblin is small but looks strong and wirey.
+    
+    It has {{hit_points}} health.

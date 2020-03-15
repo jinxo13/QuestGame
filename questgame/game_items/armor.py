@@ -5,26 +5,39 @@ from questgame.game_items.items import Item
 class Armor(Item):
     """description of class"""
     @staticmethod
-    def _get_stats(): return ArmorStats._STATS
+    def _get_stats(): return ArmorStats
 
-    def __init__(self):
-        super(Armor, self).__init__(ArmorStats)
+    def __init__(self, count=1):
+        super(Armor, self).__init__(count)
 
     @property
-    def armor_modifier_attribute(self): return None
+    def _find_prefix(self):
+        """You find a dagger"""
+        """You find an axe"""
+        """You find an egg"""
+        """You find light armor"""
+        return ''
 
     def armor_total(self, player):
-        mod = player.get_attribute_modifier(self.armor_modifier_attribute)
+        #DD5 rules
+        mod = player.get_attribute_modifier(ATTRIBUTES.DEXTERITY)
         return self.armor_class + mod
 
 class LightArmor(Armor):
-    def __init__(self):
-        super(LightArmor, self).__init__()
+    def __init__(self, count=1):
+        super(LightArmor, self).__init__(count=count)
     @property
-    def armor_modifier_attribute(self): return ATTRIBUTES.DEXTERITY
+    def text_prefix(self): return ''
 
 class BodyArmor(LightArmor): pass
-class HeavyArmor(Armor): pass
+class FurArmor(LightArmor): pass
+class HeavyArmor(Armor):
+    def armor_total(self, player):
+        #DD5 rules, maximum +2 modifier
+        mod = min(2, player.get_attribute_modifier(ATTRIBUTES.DEXTERITY))
+        return self.armor_class + mod
+
+class Robe(LightArmor): pass
 
 class ArmorStats(BaseStats):
     _AC_CLASS = BaseStats._AC_CLASS
@@ -33,9 +46,13 @@ class ArmorStats(BaseStats):
     _NAME = BaseStats._NAME
     _ATTR_MODIFIERS = BaseStats._ATTR_MODIFIERS
     _SKILL_MODIFIERS = BaseStats._SKILL_MODIFIERS
+    _NAME_MATCHES = BaseStats._NAME_MATCHES
+
     _STATS = {
-        LightArmor: { _AC_CLASS:11, _WEIGHT: 1, _COST: 5 },
-        BodyArmor: { _AC_CLASS:10, _WEIGHT: 0, _COST: 0 },
-        HeavyArmor: { _AC_CLASS:13, _WEIGHT: 0, _COST: 0, _ATTR_MODIFIERS: {'PENALTY': [ATTRIBUTES.DEXTERITY, -2]} }
+        LightArmor: { _NAME_MATCHES: ['light armor'], _AC_CLASS:11, _WEIGHT: 1, _COST: 5 },
+        Robe: { _NAME_MATCHES: ['robe'], _AC_CLASS:11, _WEIGHT: 1, _COST: 5 },
+        BodyArmor: { _NAME_MATCHES: ['body armor'], _AC_CLASS:10, _WEIGHT: 0, _COST: 0 },
+        FurArmor: { _NAME_MATCHES: ['fur armor'], _AC_CLASS:6, _WEIGHT: 0, _COST: 0 },
+        HeavyArmor: { _NAME_MATCHES: ['heavy armor'], _AC_CLASS:13, _WEIGHT: 0, _COST: 0, _ATTR_MODIFIERS: {'PENALTY': [ATTRIBUTES.DEXTERITY, -2]} }
         }
   

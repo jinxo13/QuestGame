@@ -1,0 +1,8 @@
+dagger
+short sword
+long sword
+axe
+light armor
+heavy armor
+short bow
+long bow

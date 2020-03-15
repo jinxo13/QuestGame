@@ -6,6 +6,8 @@
     SAVE_PLAYER_FAILED = 3
     START_NEW_GAME_FAILED = 4
     MISSING_SAVE_GAME_NAME = 5
+
+    NO_SUCH_TEMPLATE = 20
     
     """description of class"""
     def __init__(self, *args):

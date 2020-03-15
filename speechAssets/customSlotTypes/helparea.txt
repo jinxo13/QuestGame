@@ -1,0 +1,5 @@
+fighting
+magic
+inventory
+room
+stats

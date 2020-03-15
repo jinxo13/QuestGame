@@ -1,25 +1,120 @@
-﻿from questgame.game_items import armor, weapons
-import character_classes
-from questgame.common.rules import ATTRIBUTES, Level, GameRules
+﻿from questgame.game_items import armor, weapons, items, spells, potions
+import character_classes, skills
+from questgame.common.rules import ATTRIBUTES, Level, GameRules, Effects
 from questgame.common.base_classes import Modifiers, BaseStats, Observable
 from questgame.game_items.standard_items import Inventory
 from questgame.common.utils import Helpers
+from questgame.interface.alexa.utils import ReplyHelpers
 import json
+import copy
+
+class Actions(object):
+    PUSH = 0
+    PULL = 1
+    SEARCH = 2
+    OPEN = 3
+    CLOSE= 4
+    LOCK = 5
+    UNLOCK = 6
+    CAST = 7
+    THROW = 8
+    PICK_LOCK = 9
+    WHERE = 10
+    YES = 11
+    NO = 12
+    DESCRIBE = 13
+    STRIKE = 14
+    SHOOT = 15
+    WHAT = 16
+    PICKUP = 17
+    DROP = 18
+    DRINK = 19
+    EAT = 20
+    MONEY = 21
+    BUY = 22
+    SELL = 23
+    WHAT_BUY = 24
+
+    __STRINGS = [
+    'push', #0
+    'pull',
+    'search',
+    'open',
+    'close',
+    'lock', #5
+    'unlock',
+    'cast',
+    'throw',
+    'pick lock',
+    'where', #10
+    'yes',
+    'no',
+    'describe',
+    'strike',
+    'shoot', #15
+    'what',
+    'pickup',
+    'drop',
+    'drink',
+    'eat', #20
+    'money',
+    'buy',
+    'sell',
+    'list items for sale'
+        ]
+
+    ATTACK_ACTIONS = [STRIKE, SHOOT, CAST]
+    NO_ITEM_ACTIONS = [WHERE, WHAT, SEARCH, NO, YES, MONEY, WHAT_BUY, BUY, SELL]
+    ROOM_ITEM_ACTIONS = [PICKUP, CLOSE, LOCK, OPEN, PICK_LOCK, PULL, PUSH, SEARCH, UNLOCK, CAST, BUY, SELL]
+    PLAYER_ITEM_ACTIONS = [DRINK, DROP, THROW, EAT, MONEY, BUY, SELL]
+    ALLOWED_BATTLE_ACTIONS = [EAT, CAST, DRINK, PICKUP, DESCRIBE, DROP, SHOOT, STRIKE, THROW, WHAT, WHERE]
+    OPENABLE_ACTIONS = [OPEN, CLOSE, PICK_LOCK, UNLOCK, LOCK]
+
+    @staticmethod
+    def get_action_text(action):
+        return Actions.__STRINGS[action]
 
 class Player(Modifiers, Observable):
     
     @staticmethod
     def create_from_state(state):
-        cls = Helpers.class_for_name('questgame.players.character_classes',state['character_class'])
-        inst = Player(cls())
-        inst.__attributes = state['attributes']
+        cls = Helpers.class_for_name(state['module'], state['class'])
+        inst = cls()
+        inst.__attributes = json.loads(state['attributes'])
+        for item in state['items']:
+            inst.__inventory.add(items.Item.create_from_state(item))
+        
+        inst.__max_hit_points = state['max_hit_points']
+        inst.__hit_points = state['hit_points']
+        inst.__max_mana_points = state['max_mana_points']
+        inst.__mana_points = state['mana_points']
+        inst.__is_dead = state['is_dead']
+        if 'learned_spells' in state.keys():
+            for spell in state['learned_spells']:
+                inst.__learned_spells.append(spells.Spell.create_from_state(spell))
         return inst
 
     def get_state(self):
         result = {}
-        result['character_class'] = self.character_class.__class__.__name__
+        result['class'] = self.__class__.__name__
+        result['module'] = self.__module__
         result['attributes'] = json.dumps(self.__attributes)
+        result['items'] = []
+        result['learned_spells'] = []
+        result['hit_points'] = self.hit_points
+        result['max_hit_points'] = self.max_hit_points
+        result['mana_points'] = self.mana_points
+        result['max_mana_points'] = self.max_mana_points
+        for spell in self.__learned_spells:
+            result['learned_spells'].append(spell.get_state())
+        for item in self.__inventory.items:
+            result['items'].append(item.get_state())
         return result
+
+    @property
+    def description(self): return self.__class__.__name__.lower()
+    @property
+    def name(self): return self.__class__.__name__.lower()
 
     @property
     def dexterity(self): return self.get_attribute_current(ATTRIBUTES.DEXTERITY)
@@ -35,9 +130,11 @@ class Player(Modifiers, Observable):
     def wisdom(self): return self.get_attribute_current(ATTRIBUTES.WISDOM)
 
     @property
-    def carry_capacity(self): return GameRules.determine_carry_capacity(self)
+    def carry_capacity(self):
+        return GameRules.determine_carry_capacity(self)
     @property
-    def carry_weight(self): return self.__inventory.weight
+    def carry_weight(self):
+        return self.__inventory.weight
 
     @property
     def inventory(self): return self.__inventory
@@ -45,58 +142,126 @@ class Player(Modifiers, Observable):
     @property
     def strength_base(self): return self.get_attribute_base(ATTRIBUTES.STRENGTH)
     @strength_base.setter
-    def strength_base(self, value): self.__attributes[ATTRIBUTES.STRENGTH] = value
+    def strength_base(self, value): self.__set_attribute_base(ATTRIBUTES.STRENGTH, value)
     @property
     def dexterity_base(self):  return self.get_attribute_base(ATTRIBUTES.DEXTERITY)
     @dexterity_base.setter
-    def dexterity_base(self, value): self.__attributes[ATTRIBUTES.DEXTERITY] = value
+    def dexterity_base(self, value): self.__set_attribute_base(ATTRIBUTES.DEXTERITY, value)
     @property
     def constitution_base(self):  return self.get_attribute_base(ATTRIBUTES.CONSITUTION)
     @constitution_base.setter
-    def constitution_base(self, value): self.__attributes[ATTRIBUTES.CONSITUTION] = value
+    def constitution_base(self, value): self.__set_attribute_base(ATTRIBUTES.CONSITUTION, value)
     @property
     def intelligence_base(self):  return self.get_attribute_base(ATTRIBUTES.INTELLIGENCE)
     @intelligence_base.setter
-    def intelligence_base(self, value): self.__attributes[ATTRIBUTES.INTELLIGENCE] = value
+    def intelligence_base(self, value): self.__set_attribute_base(ATTRIBUTES.INTELLIGENCE, value)
     @property
     def wisdom_base(self): return self.get_attribute_base(ATTRIBUTES.WISDOM)
     @wisdom_base.setter
-    def wisdom_base(self, value): self.__attributes[ATTRIBUTES.WISDOM] = value
+    def wisdom_base(self, value): self.__set_attribute_base(ATTRIBUTES.WISDOM, value)
     @property
     def charisma_base(self): return self.get_attribute_base(ATTRIBUTES.CHARISMA)
     @charisma_base.setter
-    def charisma_base(self, value): self.__attributes[ATTRIBUTES.CHARISMA] = value
+    def charisma_base(self, value): self.__set_attribute_base(ATTRIBUTES.CHARISMA, value)
 
-    def get_attribute_base(self,attr): return self.__attributes[attr]
-    def get_attribute_current(self,attr): return self.get_attribute_base(attr) + self.__get_modifiers(attr)
+    def __set_attribute_base(self,attr, value): self.__attributes[str(attr)] = value
+    def get_attribute_base(self,attr):
+        if str(attr) in self.__attributes:
+            return self.__attributes[str(attr)]
+        return 0
+    def get_attribute_current(self,attr):
+        result = self.get_attribute_base(attr) + self.__get_modifiers(attr)
+        return result
+
+    def is_match(self, text):
+        return text.lower() == self.__class__.__name__.lower()
 
     ### Returns the modifier based on the attribute score
-    def get_attribute_modifier(self, attr):
-        if attr is None: return 0
-        return GameRules.get_attribute_modifier(self.get_attribute_current(attr))
+    def get_attribute_modifier(self, attrs):
+        if not isinstance(attrs, list):
+            attrs = [attrs]
+        #If multiple select max
+        if len(attrs) == 0: return 0
+        max_attr_val = max(map(self.get_attribute_current, attrs))
+        return GameRules.get_attribute_modifier(max_attr_val)
 
     ### Modifiers based on equiped items
-    def attack_modifier(self): return self.get_attribute_modifier(self.get_equipped_weapon().damage_modifier_attribute)
-    def damage_modifier(self): return self.attack_modifier()
+    def determine_ability_modifier(self):
+        '''Determined based on a weapons ability modifier(s), normally one of strength or dexterity'''
+        result = self.get_attribute_modifier(self.get_equipped_weapon().modifier_attributes)
+        return result
 
-    def initiative_modifier(self): return self.__get_modifiers(ATTRIBUTES.INITIATIVE)
-    def defense_bonus(self): return self.__get_modifiers(ATTRIBUTES.DEFENSE)
-    def attack_bonus(self): return self.__get_modifiers(ATTRIBUTES.ATTACK)
-
-    def wisdom_modifier(self): return self.__get_modifiers(ATTRIBUTES.WISDOM)
-    def dexterity_modifier(self): return self.__get_modifiers(ATTRIBUTES.DEXTERITY)
-    def constitution_modifier(self): return self.__get_modifiers(ATTRIBUTES.CONSITUTION)
+    def determine_damage_modifier(self):
+        return self.determine_ability_modifier()
 
     @property
-    def is_dead(self): return self.__is_dead
+    def defense_bonus(self): return self.__get_modifiers(ATTRIBUTES.DEFENSE)
+    @property
+    def other_attack_bonus(self):
+        return  self.__get_modifiers(ATTRIBUTES.ATTACK)
+
+    def damage_bonus(self, attack_no=1):
+        '''Return attack bonus used to roll for damage'''
+        return self.character_class.get_attack_bonus(self)[attack_no-1]
+
+    def determine_throw_bonus(self): return self.__get_modifiers(ATTRIBUTES.THROW)
+
+    @property
+    def initiative_modifier(self): return self.__get_modifiers(ATTRIBUTES.INITIATIVE)
+    @property
+    def wisdom_modifier(self): return self.__get_modifiers(ATTRIBUTES.WISDOM)
+    @property
+    def dexterity_modifier(self): return self.__get_modifiers(ATTRIBUTES.DEXTERITY)
+    @property
+    def constitution_modifier(self): return self.__get_modifiers(ATTRIBUTES.CONSITUTION)
+    @property
+    def intelligence_modifier(self): return self.__get_modifiers(ATTRIBUTES.INTELLIGENCE)
+    @property
+    def strength_modifier(self): return self.__get_modifiers(ATTRIBUTES.STRENGTH)
+
+    @property
+    def is_dead(self):
+        return self.__is_dead
+    @property
+    def is_looted(self): return self.__is_looted
     @property
     def is_unconscious(self): return not self.is_dead and self.hit_points == 0
     @property
     def is_stunned(self): return self.__is_stunned
     @property
-    def can_act(self): return not self.is_stunned and not self.is_dead and not self.is_unconscious
+    def current_condition(self):
+        if self.is_stunned: return 'stunned'
+        if self.is_unconscious: return 'unconscious'
+        #TODO: Handle more states
+        return 'unknown'
+    @property
+    def is_in_battle(self): return self.__is_in_battle
+    
+    @property
+    def can_act(self):
+        return not self.is_stunned and not self.is_dead and not self.is_unconscious
+
     @property
     def is_undead(self): return False
+    @property
+    def is_monster(self): return False
+
+    def get_reply_key(self, key):
+        if self.is_monster:
+            return 'monster_'+key
+        return 'player_'+key
+
+    @property
+    def is_mage(self): return self.__class__ == Mage
+    @property
+    def is_thief(self): return self.__class__ == Thief
+    @property
+    def is_ranger(self): return self.__class__ == Ranger
+    @property
+    def is_fighter(self): return self.__class__ == Fighter
+
+    @property
+    def money(self): return self.__inventory.money
 
     @property
     def is_encumbered(self): return self.carry_weight > self.carry_capacity
@@ -104,6 +269,17 @@ class Player(Modifiers, Observable):
     @property
     def character_class(self): return self.__character_class
     
+    @property
+    def max_mana_points(self): return self.__max_mana_points
+    @max_mana_points.setter
+    def max_mana_points(self, value):
+        self.__max_mana_points = value
+    @property
+    def mana_points(self): return self.__mana_points
+    def __set_mana_points(self, value):
+        self.__mana_points = min(max(0,value),self.__max_mana_points)
+    def add_mana(self, value):
+        self.__set_mana_points(self.__mana_points + value)
     ## Hit points
     @property
     def max_hit_points(self): return self.__max_hit_points
@@ -111,103 +287,212 @@ class Player(Modifiers, Observable):
     def max_hit_points(self, value):
         delta = value - self.__max_hit_points
         self.__max_hit_points = value
-        self.__set_hit_points(self.hit_points + delta)
+        self.__set_hit_points(self.__hit_points + delta)
     @property
-    def hit_points(self): return self.__hit_points
+    def hit_points(self):
+        return self.__hit_points
     def __set_hit_points(self, value):
-        self.__hit_points = min(max(0,value),self.max_hit_points)
+        self.__hit_points = min(max(0,value),self.__max_hit_points)
 
-    def wound(self, points):
-        self.notify_observers('LOG', "{} wounded {}".format(self.__class__.__name__,points))
-        if points == 0: return
-        if (self.hit_points - points) <= 0: self.__is_dead = True
+    def affect(self, source, effect, params):
+        if effect == Effects.Damage: self.wound(params)
+        elif effect == Effects.Heal: self.heal(params)
+
+    def wound(self, points, critical_hit=False):
+        if points <= 0 or self.is_dead: return False
+        self.notify_observers_log("{} wounded {}".format(self.__class__.__name__,points))
+        
+        #Dead if massive damage, otherwise unconsious
+        #10 - 20 = -10 - dead
+        if (self.hit_points - points) <= -self.max_hit_points:
+            self.__is_dead = True
+            self.notify_observers_log("{} - DIED!".format(self.class_name))
+
+        starting_health = self.hit_points
         self.__set_hit_points(self.hit_points - points)
+        
+        if self.is_unconscious:
+            death_saves = 3
+            if starting_health == 0:
+                death_saves -= 1
+                if critical_hit:
+                    death_saves -= 1
+            else:
+                self.notify_observers_log("{} - UNCONSCIOUS!".format(self.class_name))
+            #Roll saves
+            saved = False
+            for _i in range(death_saves):
+                saved = GameRules.roll_death_save(self)
+                if saved:
+                    break
+            if not saved:
+                self.__is_dead = True
+                self.notify_observers_log("{} - DIED!".format(self.class_name))
 
-    def heal(self, points): self.__set_hit_points(self.hit_points + points)
+        return True
+
+    def heal(self, points):
+        if points < 1 or self.hit_points == self.max_hit_points or self.is_dead: return False
+        self.__set_hit_points(self.hit_points + points)
+        self.notify_observers_reply(ReplyHelpers.render_action_template(self.get_reply_key('healed'), points=min(points,self.max_hit_points-self.hit_points), max_hit_points=self.max_hit_points, hit_points=self.hit_points))
+        return True
+
+    def _start_battle(self): self.__is_in_battle = True
+    def _end_battle(self): self.__is_in_battle = False
 
     def throw(self, item, target):
-        if self.__inventory().remove(item):
-            w = self.get_equipped_weapon()
-            if not w.is_throwable():
-                self.notify_observers('LOG', "{} - weapon {} is not throwable".format(self.class_name, w.class_name))
-                return
-            self.strike(target)
-            #The weapon is gone!
-            self.equip_weapon(None)
+        '''
+        Returns True if hit, False if miss or can't throw
+        TODO: May need a better return
+        '''
+        if not self.is_carrying(item):
+            #You're not carrying {{item_prefix}} {{item_text}} to {{action}}.
+            self.notify_observers_reply(ReplyHelpers.render_action_template('not_carrying', item_prefix=item.text_prefix, item_text=item.name, action='throw'))
+            return False
+
+        if not isinstance(item, weapons.Weapon) or not item.is_throwable:
+            self.notify_observers_log("{} - weapon {} is not throwable".format(self.class_name, item.name))
+            self.notify_observers_reply(ReplyHelpers.render_action_template('not_throwable', weapon_text=item.name))
+            return False
+        
+        result = item.throw(self, target)
+        #Maybe give if hit?
+        self.drop(item.one_of())
+
+        return result
 
     def strike(self, defender):
         defender_name = defender.__class__.__name__
         attacker_name = self.__class__.__name__
 
         if not self.can_act:
-            self.notify_observers('LOG', "{} - stunned, unconscious or dead - can't attack".format(attacker_name))
-            return
+            self.notify_observers_reply(ReplyHelpers.render_action_template(self.get_reply_key('stunned'), defender_name=defender_name, attacker_name=attacker_name))
+            self.notify_observers_log("{} - stunned, unconscious or dead - can't attack".format(attacker_name))
+            return False
 
-        self.get_equipped_weapon().strike(self, defender)
+        return self.get_equipped_weapon().strike(self, defender)
+
+    def eat(self, item):
+        if not isinstance(item, items.Food):
+            ReplyHelpers.render_action_template('eat_cannot', item_text=item.description)
+            return False
+        if not self.is_carrying(item):
+            self.notify_observers_reply(ReplyHelpers.render_action_template('not_carrying', action=Actions.get_action_text(Actions.EAT), item_prefix=item.text_prefix, item_text=item.description))
+            return False
+        self.notify_observers_reply(ReplyHelpers.render_action_template('eat_food', item_text=item.description))
+        if item.eat(self):
+            self.get_rid_of_one(item)
+            return True
+        return False
 
     def cast(self, spell, defender):
-        #if not self.character_class.is_skill_proficient(skill.__class__):
-        #    self.notify_observers('LOG', "{} - isn't proficient in this skill - can't attack".format(attacker_name))
-        #    return
-        spell.cast(self, defender)
+        return spell.cast(self, defender)
 
-    def drink_potion(self, potion):
-        if not self.inventory.contains(potion):
-            self.notify_observers('LOG', "{} - doesn't have potion {}".format(self.class_name, potion.class_name))
-            return
-        potion.drink(self)
-        self.get_rid_of(potion)
+    def drink(self, item):
+        if not isinstance(item, potions.Potion) and not isinstance(item, items.Drink):
+            self.notify_observers_reply(ReplyHelpers.render_action_template('drink_cannot', item_prefix=item.text_prefix, item_text=item.description))
+            return False
+
+        if not self.is_carrying(item):
+            self.notify_observers_reply(ReplyHelpers.render_action_template('not_carrying', action=Actions.get_action_text(Actions.DRINK), item_prefix=item.text_prefix, item_text=item.description))
+            return False
+        
+        self.notify_observers_reply(ReplyHelpers.render_action_template(self.get_reply_key('drink'), item_prefix=item.text_prefix, item_text=item.description, attacker_name=self.name))
+        if item.drink(self):
+            self.get_rid_of_one(item)
+            return True
+        return False
 
     def skill_attack(self, skill, defender):
         defender_name = defender.__class__.__name__
         attacker_name = self.__class__.__name__
-        if not self.character_class.is_skill_proficient(self, skill.__class__):
-            self.notify_observers('LOG', "{} - isn't proficient in this skill - can't attack".format(attacker_name))
-            return
+        if not self.has_skill(skill):
+            self.notify_observers_log("{} - isn't proficient in this skill - can't attack".format(attacker_name))
+            return False
 
         dmg = skill.damage(self)
-        self.notify_observers('LOG', "{} - used skill {}! Damage {}".format(attacker_name, skill.__class__.__name__, dmg))
+        self.notify_observers_log("{} - used skill {} on {}! Damage {}".format(attacker_name, skill.__class__.__name__, defender_name, dmg))
         defender.wound(dmg)
-        if defender.is_dead:
-            self.notify_observers('LOG', "{} - DIED!".format(defender_name))
+        return True
 
     @property
     def level(self): return self.__level.level
-    @level.setter
-    def level(self, value): self.__level.level = value
     @property
-    def proficiency(self): return self.__level.proficiency
+    def proficiency_bonus(self): return self.__level.proficiency_bonus
     def equip_weapon(self,weapon):
-        if weapon is None: weapon = weapons.Fists()
+        if weapon == None: raise AttributeError()
+        if not self.is_carrying(weapon):
+            self.notify_observers_reply(ReplyHelpers.render_action_template('not_carrying', item_prefix=weapon.text_prefix, item_text=weapon.description, action='equip'))
+            return False
+        if not isinstance(weapon, weapons.Weapon):
+            self.notify_observers_reply(ReplyHelpers.render_action_template(self.get_reply_key('equip_not_weapon'), item_text=weapon.description))
+            return False
         self.__weapon = weapon
-    def equip_armor(self, armor):
-        self.__armor = armor
+        if not isinstance(weapon, type(self.default_weapon)):
+            self.notify_observers_reply(ReplyHelpers.render_action_template(self.get_reply_key('equip_weapon'), attacker_name=self.name, weapon_text=weapon.description))
+        return True
+
+    def equip_armor(self, armr):
+        if armr == None: raise AttributeError()
+        if not self.is_carrying(armr):
+            self.notify_observers_reply(ReplyHelpers.render_action_template('not_carrying', item_prefix=armr.text_prefix, item_text=armr.description, action='equip'))
+            return False
+        if not isinstance(armr, armor.Armor):
+            self.notify_observers_reply(ReplyHelpers.render_action_template(self.get_reply_key('equip_not_armor'), item_text=armr.description))
+            return False
+        self.__armor = armr
+        if not isinstance(armr, type(self.default_armor)):
+            self.notify_observers_reply(ReplyHelpers.render_action_template(self.get_reply_key('equip_armor'), attacker_name=self.name, armor_text=armr.description))
+        return True
+
+    @property
+    def default_weapon(self):
+        return self.__default_weapon
+
+    @property
+    def default_armor(self):
+        return self.__default_armor
 
     def __init__(self, character_class):
         super(Player,self).__init__(None)
         Observable.__init__(self)
         self.__hit_points = 0
         self.__max_hit_points = 0
+        self.__mana_points = 0
+        self.__max_mana_points = 0
         self.__attributes = {}
-        self.__weapon = weapons.Fists()
-        self.__armor = armor.BodyArmor()
+        self.__learned_spells = []
+        self.__default_weapon = PlayerStats.get_weapon(self)
+        self.__default_armor = PlayerStats.get_armor(self)
+        self.__armor = None
+        self.__weapon = None
         self.__character_class = character_class
         self.__experience = 0
         self.__level = Level()
         self.__is_stunned = False
+        self.__is_in_battle = False
         self.__is_dead = False
+        self.__is_looted = False
         self.__inventory = Inventory(self)
-        a = self.__attributes
-        a[ATTRIBUTES.STRENGTH] = 0
-        a[ATTRIBUTES.DEXTERITY] = 0
-        a[ATTRIBUTES.CONSITUTION] = 0
-        a[ATTRIBUTES.INTELLIGENCE] = 0
-        a[ATTRIBUTES.WISDOM] = 0
-        a[ATTRIBUTES.CHARISMA] = 0
 
-    def __get_set_attribute(self, attr, value=None):
-        if value: self.__attributes[attr] = value
-        return self.__attributes[attr]
+        attrs = PlayerStats.get_attributes(self)
+        self.strength_base = attrs[ATTRIBUTES.STRENGTH]
+        self.dexterity_base = attrs[ATTRIBUTES.DEXTERITY]
+        self.constitution_base = attrs[ATTRIBUTES.CONSITUTION]
+        self.wisdom_base = attrs[ATTRIBUTES.WISDOM]
+        self.intelligence_base = attrs[ATTRIBUTES.INTELLIGENCE]
+        self.charisma_base = attrs[ATTRIBUTES.CHARISMA]
+        self.equip_weapon(self.__default_weapon)
+        self.equip_armor(self.__default_armor)
+
+        hp_dice = PlayerStats.get_hp_dice(self)
+        hp_sides = PlayerStats.get_hp_sides(self)
+        hp_bonus = PlayerStats.get_hp_bonus(self)
+        self.max_hit_points = GameRules.determine_hit_points(hp_dice, hp_sides, hp_bonus)
+        self.max_mana_points = self.character_class.get_mana_points(self)
+
+        #for spell in self.character_class.get_spells(self.level):
+        #    self.learn_spell(spell())
 
     def __get_modifiers(self,attr):
         val = 0
@@ -222,113 +507,203 @@ class Player(Modifiers, Observable):
     def __set_attribute(self, attr, value):
         if value: self.__attributes[attr] = value
     
-    def get_equipped_weapon(self): return self.__weapon
-    def get_equipped_armor(self): return self.__armor
+    def get_equipped_weapon(self):
+        return self.__weapon if not self.__weapon == None else self.__default_weapon
 
-    def get_weapon_proficiency(self):
+    def get_equipped_armor(self):
+        return self.__armor if not self.__armor == None else self.__default_armor
+
+    def is_weapon_proficient(self, weapon):
+        return self.character_class.is_weapon_proficient(self, weapon)
+
+    def determine_proficiency_bonus(self):
+        """ Modifies attack and damage based on proficiency def eq the weapon"""
+        return self.proficiency_bonus if self.character_class.is_weapon_proficient(self, self.get_equipped_weapon()) else 0
+
+    def determine_spell_proficiency(self, spell):
         """ Modifies attack and damage based on proficiency with the weapon"""
-        weapon = self.get_equipped_weapon()
-        if self.character_class.is_weapon_proficient(self, weapon):
-            return self.proficiency
-        return 0
+        return self.proficiency_bonus if self.character_class.knows_spell(self, spell) else 0
 
-    def get_spell_proficiency(self, spell):
-        """ Modifies attack and damage based on proficiency with the weapon"""
-        if self.character_class.is_spell_proficient(self, spell):
-            return self.proficiency
-        return 0
-
-    def get_armor_class(self):
+    def get_defense(self):
         """ Determines current armor class - base and any modifiers """
-        return GameRules.get_armor_class(self)
+        return GameRules.get_player_defense(self)
 
     def add_experience(self, exp):
         current_level = self.__level.level
-        new_level = Level.get_level_by_exp(self.__experience+exp)
+        self.__experience += exp
+        new_level = Level.get_level_by_exp(self.__experience)
         if current_level != new_level:
             self.__level.level = new_level
 
     def _set_encumbered(self):
-        self.notify_observers('LOG', "{} encumbered".format(self.class_name))
+        self.notify_observers_log("{} encumbered".format(self.class_name))
         self.add_modifier('ENCUMBERED',ATTRIBUTES.DEXTERITY, -4)
 
     def _set_unencumbered(self):
-        self.notify_observers('LOG', "{} unencumbered".format(self.class_name))
+        self.notify_observers_log("{} unencumbered".format(self.class_name))
         self.remove_modifier('ENCUMBERED')
 
-    def pickup(self, item):
-        if isinstance(item, list):
-            if len(item) == 0: return
-            self.notify_observers('LOG', "{} picked up {} {}".format(self.class_name, len(item), item[0].class_name))
-            for i in list:
-                self.__inventory.add(i)
-        else:
-            self.notify_observers('LOG', "{} picked up {}".format(self.class_name, item.class_name))
-            self.__inventory.add(item)
-        return True
+    def is_carrying(self, item):
+        return self.__inventory.contains(item)
 
-    def drop(self, item):
-        if isinstance(item, list):
-            if len(item) == 0: return
-            self.notify_observers('LOG', "{} dropped {} {}".format(self.class_name, len(item), item[0].class_name))
-            for i in list:
-                self.__inventory.remove(i)
-        else:
-            if (self.__inventory.remove(item)):
-                self.notify_observers('LOG', "{} dropped {}".format(self.class_name, item.class_name))
-                return True
-            else:
-                self.notify_observers('LOG', "Drop failed, {} not carrying {}".format(self.class_name, item.class_name))
-                return False
+    def get_item_by_name(self, item_text):
+        for item in self.__inventory.items:
+            if item.is_match(item_text): return item
+        return None
 
-    def get_rid_of(self, item):
-        if (self.__inventory.remove(item)):
-            self.notify_observers('LOG', "{} used up".format(item.class_name))
+    def get_item(self, item):
+        for itm in self.__inventory.items:
+            if itm.__class__ == item.__class__:
+                return itm
+        return False
+
+    def has_skill(self, skill):
+        return self.character_class.is_skill_proficient(self, skill)
+
+    def can_picklock(self):
+        return self.can_act and self.is_carrying(items.LockPick()) and self.has_skill(skills.LockPicking())
+
+    def learn_spell(self, spell):
+        if not isinstance(spell, spells.Spell):
+            self.notify_observers_reply(ReplyHelpers.render_action_template('not_spell', spell_name=spell.description))
+            return False
+        if self.level < spell.level:
+            self.notify_observers_reply(ReplyHelpers.render_action_template('spell_too_hard', spell_name=spell.description))
+            return False
+        if not self.knows_spell(spell):
+            self.__learned_spells.append(spell)
+            self.notify_observers_reply(ReplyHelpers.render_action_template('spell_learned', spell_name=spell.description))
             return True
         else:
-            self.notify_observers('LOG', "Get rid of item failed, {} not carrying {}".format(self.class_name, item.class_name))
+            self.notify_observers_reply(ReplyHelpers.render_action_template('spell_already_known', spell_name=spell.description))
+            return False
+
+    def knows_spell(self, spell):
+        for spl in self.__learned_spells:
+            if spl.__class__ == spell.__class__: return True
+        return self.character_class.knows_spell(self, spell)
+
+    def can_cast_spell(self, spell):
+        if not self.can_act:
+            self.notify_observers_reply(ReplyHelpers.render_action_template('cannot_act', condition=self.current_condition))
+            return False
+        if not self.knows_spell(spell):
+            self.notify_observers_reply(ReplyHelpers.render_action_template('spell_not_proficient', spell_name=spell.description))
+            return False
+        if spell.level > self.level:
+            self.notify_observers_reply(ReplyHelpers.render_action_template('spell_too_advanced', spell_name=spell.description))
+            return False
+        if not self.mana_points >= spell.level:
+            self.notify_observers_reply(ReplyHelpers.render_action_template('spell_not_enough_mana', spell_name=spell.description))
+            return False
+        return True
+
+    def loot_body(self, body):
+        result = []
+        if body.is_looted:
+            self.notify_observers_reply(ReplyHelpers.render_action_template('already_looted', body_name=body.description))
+            return False
+        for item in body.inventory.items:
+            self.__inventory.add(item)
+            result.append(item)
+            body.__inventory.remove(item)
+        self.__is_looted = True
+        return result
+
+    def has_weapon_equipped(self):
+        weapon = self.get_equipped_weapon()
+        default = self.default_weapon
+        return not isinstance(weapon, type(default))
+
+    def has_armor_equipped(self):
+        return not isinstance(self.get_equipped_armor(), type(self.default_armor))
+
+    def pickup(self, item):
+        if isinstance(item, items.Scroll):
+            scroll = item
+            self.learn_spell(scroll.spell)
+        self.notify_observers_log("{} picked up {} {}".format(self.class_name, item.count, item.class_name))
+
+        self.__inventory.add(item)
+
+        #Equip weapon, if proficient and not equipped
+        if not self.has_weapon_equipped() and isinstance(item, weapons.Weapon) and not isinstance(item, weapons.Arrow) \
+            and self.character_class.is_weapon_proficient(self, item):
+            self.equip_weapon(item)
+
+        #Equip armor, if proficient and not equipped
+        if not self.has_armor_equipped() and isinstance(item, armor.Armor) \
+            and self.character_class.is_armor_proficient(self, item):
+            self.equip_armor(item)
+        return True
+
+    def is_weapon_equipped(self, item):
+        return self.get_equipped_weapon().__class__ == item.__class__
+    def is_armor_equipped(self, item):
+        return self.get_equipped_armor().__class__ == item.__class__
+
+    def _check_equipped_items(self, item):
+        '''
+        Sets weapons to fists if the player no longer has the equipped weapon
+        '''
+        if not self.is_carrying(item):
+            if self.is_weapon_equipped(item):
+                #Hmmm looks like you may have thrown your last dagger :)
+                self.__weapon = self.default_weapon
+
+            if self.is_armor_equipped(item):
+                self.__armor = self.default_armor
+
+    def remove_item(self, item):
+        result = self.__inventory.remove(item)
+        self._check_equipped_items(item)
+        return result
+
+    def drop(self, item):
+        if not self.is_carrying(item):
+            self.notify_observers_log("Drop failed, {} not carrying {}".format(self.class_name, item.class_name))
+            return False
+        result = self.remove_item(item)
+        self.notify_observers_log("{} dropped {} {}".format(self.class_name, item.count, item.class_name))
+        return result
+
+    def get_rid_of_one(self, item):
+        itm = copy.copy(item)
+        itm.count = 1
+        result = self.remove_item(itm)
+        if result:
+            self.notify_observers_log("{} used up".format(item.class_name))
+            return result
+        else:
+            self.notify_observers_log("Get rid of item failed, {} not carrying {}".format(self.class_name, item.class_name))
             return False
 
     def give(self, item, to_player):
-        if isinstance(item, list):
-            if len(item) == 0: return
-            self.notify_observers('LOG', "{} gave {} {} to {}".format(self.class_name, len(item), item[0].class_name, to_player.class_name))
-            for i in item:
-                self.__inventory.remove(item)
-                to_player.__inventory.add(item)
-            to_player.notify_observers('LOG', "{} received {} {} from {}".format(to_player.class_name, len(item), item[0].class_name, self.class_name))
-        else:
-            if (self.__inventory.remove(item)):
-                self.notify_observers('LOG', "{} gave {} to {}".format(self.class_name, item.class_name, to_player.class_name))
+        if not self.is_carrying(item):
+            self.notify_observers_log("Give failed, {} not carrying {}".format(self.class_name, item.class_name))
+            return False
 
-                to_player.__inventory.add(item)
-                to_player.notify_observers('LOG', "{} received {} from {}".format(to_player.class_name, item.class_name, self.class_name))
-                return True
-            else:
-                self.notify_observers('LOG', "Give failed, {} not carrying {}".format(self.class_name, item.class_name))
-                return False
+        if not self.remove_item(item):
+            self.notify_observers_log("Give failed, {} couldn't remove {}".format(self.class_name, item.class_name))
+            return False
+
+        to_player.__inventory.add(item)
+        self.notify_observers_log("{} gave {} {} to {}".format(self.class_name, item.count, item.class_name, to_player.class_name))
+        return True
+
+class Thief(Player):
+    def __init__(self): super(Thief, self).__init__(character_classes.Thief())
+class Mage(Player):
+    def __init__(self): super(Mage, self).__init__(character_classes.Mage())
+class Fighter(Player):
+    def __init__(self): super(Fighter, self).__init__(character_classes.Fighter())
+class Ranger(Player):
+    def __init__(self): super(Ranger, self).__init__(character_classes.Ranger())
+
 
 class Monster(Player):
-    @staticmethod
-    def _get_stats(): return MonsterStats._STATS
-
-    def __init__(self, character_class):
-        Modifiers.__init__(self, MonsterStats)
-        super(Monster, self).__init__(character_class)
-        attrs = MonsterStats.get_attributes(self)
-        self.strength_base = attrs[ATTRIBUTES.STRENGTH]
-        self.dexterity_base = attrs[ATTRIBUTES.DEXTERITY]
-        self.constitution_base = attrs[ATTRIBUTES.CONSITUTION]
-        self.wisdom_base = attrs[ATTRIBUTES.WISDOM]
-        self.intelligence_base = attrs[ATTRIBUTES.INTELLIGENCE]
-        self.charisma_base = attrs[ATTRIBUTES.CHARISMA]
-        self.equip_weapon(MonsterStats.get_weapon(self))
-        self.equip_armor(MonsterStats.get_armor(self))
-
-        hp_dice = MonsterStats.get_hp_dice(self)
-        hp_sides = MonsterStats.get_hp_sides(self)
-        hp_bonus = MonsterStats.get_hp_bonus(self)
-        self.max_hit_points = GameRules.determine_hit_points(hp_dice, hp_sides, hp_bonus)
+    @property
+    def is_monster(self): return True
 
 class UndeadMonster(Monster):
     @property
@@ -340,8 +715,13 @@ class UndeadMonster(Monster):
 class Goblin(Monster):
     def __init__(self): super(Goblin, self).__init__(character_classes.Goblin())
 
+class Rat(Monster):
+    def __init__(self): super(Rat, self).__init__(character_classes.Animal())
 
-class MonsterStats(BaseStats):
+class ZombieRat(UndeadMonster):
+    def __init__(self): super(ZombieRat, self).__init__(character_classes.Animal())
+
+class PlayerStats(BaseStats):
     __ATTRIBUTES = 1
     __WEAPON = 2
     __ARMOR = 3
@@ -349,6 +729,73 @@ class MonsterStats(BaseStats):
     __ATTR_MODIFIERS = BaseStats._ATTR_MODIFIERS
     __SKILL_MODIFIERS = BaseStats._SKILL_MODIFIERS
     _STATS = {
+        Thief: {
+            __HIT_POINTS: [1,8,8], #1d8+8
+            __ATTRIBUTES: {
+                ATTRIBUTES.INTELLIGENCE: 8,
+                ATTRIBUTES.STRENGTH: 10,
+                ATTRIBUTES.DEXTERITY: 11,
+                ATTRIBUTES.CONSITUTION: 12,
+                ATTRIBUTES.WISDOM: 2,
+                ATTRIBUTES.CHARISMA: 2,
+            },
+            __ATTR_MODIFIERS: {
+                'Faster Reaction': [ATTRIBUTES.INITIATIVE, 2],
+                'Throw bonus': [ATTRIBUTES.THROW, 2]
+              },
+            __WEAPON: weapons.Fists(),
+            __ARMOR: armor.BodyArmor()
+        },
+        Fighter: {
+            __HIT_POINTS: [1,8,8], #1d8+8
+            __ATTRIBUTES: {
+                ATTRIBUTES.INTELLIGENCE: 8,
+                ATTRIBUTES.STRENGTH: 10,
+                ATTRIBUTES.DEXTERITY: 11,
+                ATTRIBUTES.CONSITUTION: 12,
+                ATTRIBUTES.WISDOM: 2,
+                ATTRIBUTES.CHARISMA: 2,
+            },
+            __ATTR_MODIFIERS: {
+                'Faster Reaction': [ATTRIBUTES.INITIATIVE, 2],
+                'Throw bonus': [ATTRIBUTES.THROW, 2]
+              },
+            __WEAPON: weapons.Fists(),
+            __ARMOR: armor.BodyArmor()
+        },
+        Ranger: {
+            __HIT_POINTS: [1,8,8], #1d8+8
+            __ATTRIBUTES: {
+                ATTRIBUTES.INTELLIGENCE: 8,
+                ATTRIBUTES.STRENGTH: 10,
+                ATTRIBUTES.DEXTERITY: 11,
+                ATTRIBUTES.CONSITUTION: 12,
+                ATTRIBUTES.WISDOM: 2,
+                ATTRIBUTES.CHARISMA: 2,
+            },
+            __ATTR_MODIFIERS: {
+                'Faster Reaction': [ATTRIBUTES.INITIATIVE, 2],
+                'Throw bonus': [ATTRIBUTES.THROW, 2]
+              },
+            __WEAPON: weapons.Fists(),
+            __ARMOR: armor.BodyArmor()
+        },
+        Mage: {
+            __HIT_POINTS: [1,6,6], #1d6+6
+            __ATTRIBUTES: {
+                ATTRIBUTES.INTELLIGENCE: 12,
+                ATTRIBUTES.STRENGTH: 8,
+                ATTRIBUTES.DEXTERITY: 11,
+                ATTRIBUTES.CONSITUTION: 10,
+                ATTRIBUTES.WISDOM: 8,
+                ATTRIBUTES.CHARISMA: 4,
+            },
+            __ATTR_MODIFIERS: {
+                'Faster Reaction': [ATTRIBUTES.INITIATIVE, 2]
+              },
+            __WEAPON: weapons.Fists(),
+            __ARMOR: armor.BodyArmor()
+        },
         Goblin: {
             __HIT_POINTS: [1,8,1], #1d8+1
             __ATTRIBUTES: {
@@ -365,17 +812,49 @@ class MonsterStats(BaseStats):
             __WEAPON: weapons.Dagger(),
             __ARMOR: armor.LightArmor()
         },
+        Rat: {
+            __HIT_POINTS: [1,6,1], #1d6+1
+            __ATTRIBUTES: {
+                ATTRIBUTES.INTELLIGENCE: 2,
+                ATTRIBUTES.STRENGTH: 8,
+                ATTRIBUTES.DEXTERITY: 8,
+                ATTRIBUTES.CONSITUTION: 4,
+                ATTRIBUTES.WISDOM: 1,
+                ATTRIBUTES.CHARISMA: 1,
+            },
+            __ATTR_MODIFIERS: {
+                'Faster Reaction': [ATTRIBUTES.INITIATIVE, 2]
+              },
+            __WEAPON: weapons.Claws(),
+            __ARMOR: armor.FurArmor()
+        },
+        ZombieRat: {
+            __HIT_POINTS: [1,6,1], #1d6+1
+            __ATTRIBUTES: {
+                ATTRIBUTES.INTELLIGENCE: 2,
+                ATTRIBUTES.STRENGTH: 8,
+                ATTRIBUTES.DEXTERITY: 8,
+                ATTRIBUTES.CONSITUTION: 4,
+                ATTRIBUTES.WISDOM: 1,
+                ATTRIBUTES.CHARISMA: 1,
+            },
+            __ATTR_MODIFIERS: {
+                'Faster Reaction': [ATTRIBUTES.INITIATIVE, 2]
+              },
+            __WEAPON: weapons.Claws(),
+            __ARMOR: armor.FurArmor()
+        },
      }
     @staticmethod
-    def get_attributes(monster): return MonsterStats._STATS[monster.__class__][MonsterStats.__ATTRIBUTES]
+    def get_attributes(monster): return PlayerStats._STATS[monster.__class__][PlayerStats.__ATTRIBUTES]
     @staticmethod
-    def get_weapon(monster): return MonsterStats._STATS[monster.__class__][MonsterStats.__WEAPON]
+    def get_weapon(monster): return PlayerStats._STATS[monster.__class__][PlayerStats.__WEAPON]
     @staticmethod
-    def get_armor(monster): return MonsterStats._STATS[monster.__class__][MonsterStats.__ARMOR]
+    def get_armor(monster): return PlayerStats._STATS[monster.__class__][PlayerStats.__ARMOR]
     @staticmethod
-    def get_hp_dice(monster): return MonsterStats._STATS[monster.__class__][MonsterStats.__HIT_POINTS][0]
+    def get_hp_dice(monster): return PlayerStats._STATS[monster.__class__][PlayerStats.__HIT_POINTS][0]
     @staticmethod
-    def get_hp_sides(monster): return MonsterStats._STATS[monster.__class__][MonsterStats.__HIT_POINTS][1]
+    def get_hp_sides(monster): return PlayerStats._STATS[monster.__class__][PlayerStats.__HIT_POINTS][1]
     @staticmethod
-    def get_hp_bonus(monster): return MonsterStats._STATS[monster.__class__][MonsterStats.__HIT_POINTS][2]
+    def get_hp_bonus(monster): return PlayerStats._STATS[monster.__class__][PlayerStats.__HIT_POINTS][2]
 

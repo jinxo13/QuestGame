@@ -76,7 +76,7 @@ class Test_dynamodb(unittest.TestCase):
         db = database.db('test_user')
         dynamodb = db._connect()
 
-        self.assertTrue(test_constants.UNITTEST_DB_LOCAL)
+        #self.assertTrue(test_constants.UNITTEST_DB_LOCAL)
 
         try:
             table = dynamodb.Table('GameData')
@@ -117,7 +117,7 @@ class Test_dynamodb(unittest.TestCase):
         self.assertFalse(db.does_user_exist())
 
         #Load some data
-        db.store_json('test',os.path.join('.','src','config','rooms.json'))
+        db.store_json('test',os.path.join('.','questgame','config','rooms.json'))
 
         self.assertTrue(db.does_user_exist())
 

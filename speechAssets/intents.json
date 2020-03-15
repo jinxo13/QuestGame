@@ -1,22 +1,58 @@
 {
   "intents": [
     {
-      "intent": "CharacterIntent",
       "slots": [
         {
           "name": "name",
           "type": "Character"
         }
-      ]
+      ],
+      "intent": "CharacterIntent"
     },
     {
-      "intent": "DescribeItemIntent",
       "slots": [
         {
           "name": "ditem",
           "type": "DescribeableItem"
         }
-      ]
+      ],
+      "intent": "DescribeItemIntent"
+    },
+    {
+      "slots": [
+        {
+          "name": "ditem",
+          "type": "DescribeableItem"
+        }
+      ],
+      "intent": "EatIntent"
+    },
+    {
+      "slots": [
+        {
+          "name": "ditem",
+          "type": "DescribeableItem"
+        }
+      ],
+      "intent": "PickupIntent"
+    },
+    {
+      "slots": [
+        {
+          "name": "ditem",
+          "type": "DescribeableItem"
+        }
+      ],
+      "intent": "DropIntent"
+    },
+    {
+      "slots": [
+        {
+          "name": "ditem",
+          "type": "DescribeableItem"
+        }
+      ],
+      "intent": "SelectItemIntent"
     },
     {
       "intent": "WhereIntent"
@@ -25,37 +61,87 @@
       "intent": "StartGameIntent"
     },
     {
-      "intent": "OpenIntent",
       "slots": [
         {
           "name": "oitem",
           "type": "OpenableItem"
         }
-      ]
+      ],
+      "intent": "OpenIntent"
     },
     {
-      "intent": "CloseIntent",
+      "slots": [
+        {
+          "name": "ditem",
+          "type": "DescribeableItem"
+        }
+      ],
+      "intent": "PullIntent"
+    },
+    {
+      "slots": [
+        {
+          "name": "ditem",
+          "type": "DescribeableItem"
+        }
+      ],
+      "intent": "PushIntent"
+    },
+    {
       "slots": [
         {
           "name": "oitem",
           "type": "OpenableItem"
         }
-      ]
+      ],
+      "intent": "CloseIntent"
     },
     {
-      "intent": "SearchIntent",
+      "slots": [
+        {
+          "name": "oitem",
+          "type": "OpenableItem"
+        }
+      ],
+      "intent": "UnlockIntent"
+    },
+    {
+      "slots": [
+        {
+          "name": "oitem",
+          "type": "OpenableItem"
+        }
+      ],
+      "intent": "LockIntent"
+    },
+    {
       "slots": [
         {
           "name": "sitem",
           "type": "SearchableItem"
         }
-      ]
+      ],
+      "intent": "SearchIntent"
     },
     {
+      "slots": [
+        {
+          "name": "area",
+          "type": "HelpArea"
+        }
+      ],
+      "intent": "HelpIntent"
+    },
+    {
+      "slots": [
+        {
+          "name": "oitem",
+          "type": "OpenableItem"
+        }
+      ],
       "intent": "PickLockIntent"
     },
     {
-        "intent": "CastIntent",
       "slots": [
         {
           "name": "spell",
@@ -65,28 +151,43 @@
           "name": "target",
           "type": "TargetableItem"
         }
-      ]
+      ],
+      "intent": "CastTargetIntent"
     },
     {
-        "intent": "ShootIntent",
+      "slots": [
+        {
+          "name": "spell",
+          "type": "Spell"
+        }
+      ],
+      "intent": "CastIntent"
+    },
+    {
       "slots": [
         {
           "name": "target",
           "type": "TargetableItem"
         }
-      ]
+      ],
+      "intent": "ShootTargetIntent"
     },
     {
-        "intent": "StrikeIntent",
+      "intent": "ShootIntent"
+    },
+    {
       "slots": [
         {
           "name": "target",
           "type": "TargetableItem"
         }
-      ]
+      ],
+      "intent": "StrikeTargetIntent"
     },
     {
-        "intent": "ThrowIntent",
+      "intent": "StrikeIntent"
+    },
+    {
       "slots": [
         {
           "name": "titem",
@@ -96,10 +197,32 @@
           "name": "target",
           "type": "TargetableItem"
         }
-      ]
+      ],
+      "intent": "ThrowTargetIntent"
+    },
+    {
+      "slots": [
+        {
+          "name": "titem",
+          "type": "ThrowableItem"
+        }
+      ],
+      "intent": "ThrowIntent"
+    },
+    {
+      "slots": [
+        {
+          "name": "eitem",
+          "type": "EquipableItem"
+        }
+      ],
+      "intent": "EquipIntent"
     },
     {
       "intent": "AMAZON.CancelIntent"
+    },
+    {
+      "intent": "WhatCanIDoIntent"
     },
     {
       "intent": "AMAZON.StopIntent"

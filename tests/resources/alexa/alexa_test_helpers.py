@@ -9,7 +9,11 @@ class AlexaResponse(object):
         self.__response = response
         self.__data = json.loads(response.data)
     #Helper methods
-    def get_output_text(self): return self.__data['response']['outputSpeech']['text']
+    def get_output_text(self):
+        if 'text' in self.__data['response']['outputSpeech']:
+            return self.__data['response']['outputSpeech']['text']
+        else:
+            return self.__data['response']['outputSpeech']['ssml'].replace('<speak>','').replace('</speak>','')
     def get_reprompt_text(self): return self.__data['response']['reprompt']['outputSpeech']['text']
 
 class AlexaRequest(object):
@@ -80,7 +84,7 @@ class AlexaRequest(object):
         self.__request_id += 1
         return '{}'.format(self.__request_id)
     def __get_new_session_id(self):
-        self.__session_id += 1
+        self.__session_id = int(self.__session_id) + 1
         return '{}'.format(self.__session_id)
     def __set_user_id(self, value): self.__request['session']['user']['userId'] = value
     def __set_application_id(self, value): self.__request['session']['application']['applicationId'] = value
