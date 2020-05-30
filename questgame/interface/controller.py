@@ -1,6 +1,7 @@
 ﻿from questgame.db import database
 import logging
 from questgame import rooms
+from questgame.rooms.room import Room
 from questgame.players.players import Thief, Mage, Fighter, Ranger, Player, Actions
 from questgame.common.errors import QuestGameError
 
@@ -32,18 +33,19 @@ class UserState(object):
     def save_player(self):
         try:
             self.__lm.save_player(self.__save_name, self.__player.get_state())
-        except Exception, e:
+        except Exception:
             logger.exception('message')
             raise QuestGameError(QuestGameError.SAVE_PLAYER_FAILED)
     def delete_game(self):
-        result = self.__lm.delete_game(self.__save_name)
+        self.__lm.delete_game(self.__save_name)
+
     def load_game(self):
         try:
             result = self.__lm.load_game(self.__save_name)
             if result is None:
                 raise QuestGameError(QuestGameError.NO_SUCH_GAME)
             self.state = result
-        except Exception, e:
+        except Exception:
             logger.exception('message')
             raise QuestGameError(QuestGameError.LOAD_FAILED)
         player_state = self.state[LoadManager.STATE_PLAYER]
@@ -52,7 +54,7 @@ class UserState(object):
         current_room = 'CellRoom'
         if current_room in self.state[LoadManager.STATE_ROOM]:
             room_state = self.state[LoadManager.STATE_ROOM][current_room]
-            self.set_room(rooms.room.Room.create_from_state(room_state, self.__player))
+            self.set_room(Room.create_from_state(room_state))
         else:
             self.set_room(rooms.room.CellRoom(self.__player))
 
@@ -66,7 +68,7 @@ class UserState(object):
             self.__lm.save_game(self.__save_name, self.state)
             self.__lm.save_player(self.__save_name, self.__player.get_state())
             self.__is_active = True
-        except Exception, e:
+        except Exception:
             logger.exception('message')
             raise QuestGameError(QuestGameError.SAVE_GAME_FAILED)
 
@@ -75,7 +77,7 @@ class UserState(object):
         try:
             self.__lm.save_room(self.__save_name, self.room.name, self.room.get_state())
             return True, None
-        except Exception, e:
+        except Exception:
             logger.exception('message')
             return False, GameManager.UNKNOWN_ERROR
 
@@ -83,7 +85,7 @@ class UserState(object):
         """Loads the state of the specified room"""
         try:
             return self.__lm.load_room(self.__save_name, room_name)
-        except Exception, e:
+        except Exception:
             logger.exception('message')
             return False, GameManager.UNKNOWN_ERROR
 
@@ -142,8 +144,7 @@ class GameManager(object):
             user.save_game()
             user.set_room(rooms.CellRoom(player))
             return user.room.start()
-        except QuestGameError, e: raise e
-        except Exception, e:
+        except Exception:
             logger.exception('message')
             raise QuestGameError(QuestGameError.START_NEW_GAME_FAILED)
 

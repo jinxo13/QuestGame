@@ -8,9 +8,9 @@ from questgame.common import base_classes
 from questgame.common.utils import Helpers
 from questgame.common.rules import GameRules
 
-class TestLoadState(unittest.TestCase):
+class TestItems(unittest.TestCase):
 
-    def test_items(self):
+    def test_pickup(self):
         beer = items.Beer()
         bread = items.StaleBread()
 
@@ -20,6 +20,7 @@ class TestLoadState(unittest.TestCase):
 
         state = players.Thief().get_state()
         thief = players.Player.create_from_state(state)
+        
         self.assertTrue(thief.is_carrying(bread))
         self.assertTrue(thief.is_carrying(beer))
 
@@ -282,7 +283,7 @@ class Test_Others(unittest.TestCase):
             self.assertLessEqual(dmg, 7) #max damage
             self.assertEqual(player.hit_points, 100 - dmg)
             self.assertFalse(spikeTrap.is_armed)
-            print "SpikeTrap caused {} damage".format(dmg)
+            print("SpikeTrap caused {} damage".format(dmg))
             player.heal(dmg)
             spikeTrap.reset()
         self.assertTrue(dmg_occured)
@@ -297,7 +298,7 @@ class Test_Others(unittest.TestCase):
             self.assertLessEqual(dmg, 6) #max damage
             self.assertEqual(player.hit_points, 100 - dmg)
             self.assertFalse(spellTrap.is_armed)
-            print "SpellTrap caused {} damage".format(dmg)
+            print("SpellTrap caused {} damage".format(dmg))
             player.heal(dmg)
             spellTrap.reset()
         self.assertTrue(dmg_occured)
@@ -316,7 +317,7 @@ class Test_Others(unittest.TestCase):
                 self.assertEqual(player.hit_points, 100 - dmg)
                 player.heal(dmg)
                 self.assertFalse(spellTrap.is_armed)
-                print "SpellTrap caused {} damage".format(dmg)
+                print("SpellTrap caused {} damage".format(dmg))
             spellTrap.reset()
 
     def test_inventory(self):
@@ -376,8 +377,7 @@ class Test_Others(unittest.TestCase):
         self.assertEqual(0,inv.count_items(c))
 
         #Test getting arrows
-        f = inv.find_ammo(weapons.Arrow)
-        self.assertIsNone(f)
+        self.assertFalse(inv.find_ammo(weapons.Arrow))
         inv.add(weapons.WoodArrow())
         inv.add(weapons.IronArrow())
         inv.add(weapons.SteelArrow())
@@ -393,7 +393,7 @@ class Test_Others(unittest.TestCase):
         self.assertTrue(inv.contains(items.CellRoomKey()))
 
         #Test Money
-        for itm in inv.items:
+        for itm in inv.items():
             inv.remove(itm)
         self.assertEqual(0,inv.count)
         gold = items.Gold(4)
@@ -423,7 +423,7 @@ class Test_Others(unittest.TestCase):
         self.assertEqual(round(16 * 0.001,3),inv.weight)
         self.assertEqual(16,inv.count)
 
-        for itm in inv.items:
+        for itm in inv.items():
             inv.remove(itm)
         inv.add_money(10.51)
         self.assertEqual(10,inv.get_item(items.Gold()).count)
@@ -431,7 +431,7 @@ class Test_Others(unittest.TestCase):
         self.assertEqual(1,inv.get_item(items.Copper()).count)
 
         inv.remove_money(9.88)
-        self.assertTrue(inv.get_item(items.Gold()) is None)
+        self.assertFalse(inv.get_item(items.Gold()))
         self.assertEqual(6,inv.get_item(items.Silver()).count)
         self.assertEqual(3,inv.get_item(items.Copper()).count)
 

@@ -1,4 +1,4 @@
-﻿from questgame.common.rules import GameRules, ATTRIBUTES
+﻿from questgame.common.rules import GameRules, PlayerAttributes
 from questgame.common.base_classes import BaseStats
 from questgame.game_items.items import Item
 
@@ -20,7 +20,7 @@ class Armor(Item):
 
     def armor_total(self, player):
         #DD5 rules
-        mod = player.get_attribute_modifier(ATTRIBUTES.DEXTERITY)
+        mod = player.get_attribute_modifier(PlayerAttributes.DEXTERITY)
         return self.armor_class + mod
 
 class LightArmor(Armor):
@@ -34,13 +34,13 @@ class FurArmor(LightArmor): pass
 class HeavyArmor(Armor):
     def armor_total(self, player):
         #DD5 rules, maximum +2 modifier
-        mod = min(2, player.get_attribute_modifier(ATTRIBUTES.DEXTERITY))
+        mod = min(2, player.get_attribute_modifier(PlayerAttributes.DEXTERITY))
         return self.armor_class + mod
 
 class Robe(LightArmor): pass
 
 class ArmorStats(BaseStats):
-    _AC_CLASS = BaseStats._AC_CLASS
+    _ARMOR_CLASS = BaseStats._ARMOR_CLASS
     _WEIGHT = BaseStats._WEIGHT
     _COST = BaseStats._COST
     _NAME = BaseStats._NAME
@@ -49,10 +49,10 @@ class ArmorStats(BaseStats):
     _NAME_MATCHES = BaseStats._NAME_MATCHES
 
     _STATS = {
-        LightArmor: { _NAME_MATCHES: ['light armor'], _AC_CLASS:11, _WEIGHT: 1, _COST: 5 },
-        Robe: { _NAME_MATCHES: ['robe'], _AC_CLASS:11, _WEIGHT: 1, _COST: 5 },
-        BodyArmor: { _NAME_MATCHES: ['body armor'], _AC_CLASS:10, _WEIGHT: 0, _COST: 0 },
-        FurArmor: { _NAME_MATCHES: ['fur armor'], _AC_CLASS:6, _WEIGHT: 0, _COST: 0 },
-        HeavyArmor: { _NAME_MATCHES: ['heavy armor'], _AC_CLASS:13, _WEIGHT: 0, _COST: 0, _ATTR_MODIFIERS: {'PENALTY': [ATTRIBUTES.DEXTERITY, -2]} }
+        LightArmor: { _NAME_MATCHES: ['light armor'], _ARMOR_CLASS:11, _WEIGHT: 1, _COST: 5 },
+        Robe: { _NAME_MATCHES: ['robe'], _ARMOR_CLASS:11, _WEIGHT: 1, _COST: 5 },
+        BodyArmor: { _NAME_MATCHES: ['body armor'], _ARMOR_CLASS:10, _WEIGHT: 0, _COST: 0 },
+        FurArmor: { _NAME_MATCHES: ['fur armor'], _ARMOR_CLASS:6, _WEIGHT: 0, _COST: 0 },
+        HeavyArmor: { _NAME_MATCHES: ['heavy armor'], _ARMOR_CLASS:13, _WEIGHT: 0, _COST: 0, _ATTR_MODIFIERS: {'PENALTY': [PlayerAttributes.DEXTERITY, -2]} }
         }
   

@@ -62,3 +62,45 @@ class MockHelper:
     @staticmethod
     def Method(ref, method_name, return_value=False):
         return MethodMock(ref, method_name, return_value)
+
+    @staticmethod
+    def get_mock_item(spec=None):
+        import questgame.game_items.items as items
+        if spec == None: spec = items.Item
+        item = Mock(spec=spec)
+        item.weight = 1
+        item.count = 1
+        item.single_weight = 1
+        item.create_from_state = Mock(return_value=item)
+        item.get_bonus_value = Mock(return_value=0)
+        return item
+
+    @staticmethod
+    def get_mock_armor():
+        import questgame.game_items.armor as armor
+        return MockHelper.get_mock_item(spec=armor.Armor)
+
+    @staticmethod
+    def get_mock_lock_spell():
+        import questgame.game_items.spells as spells
+        return MockHelper.get_mock_item(spec=spells.LockSpell)
+
+    @staticmethod
+    def get_mock_weapon():
+        import questgame.game_items.weapons as weapons
+        return MockHelper.get_mock_item(spec=weapons.Weapon)
+
+    @staticmethod
+    def get_mock_scroll():
+        import questgame.game_items.items as items
+        return MockHelper.get_mock_item(items.Scroll)
+
+    @staticmethod
+    def get_mock_beer():
+        import questgame.game_items.items as items
+        return MockHelper.get_mock_item(items.Beer)
+
+    @staticmethod
+    def get_mock_money():
+        import questgame.game_items.items as items
+        return MockHelper.get_mock_item(items.Money)

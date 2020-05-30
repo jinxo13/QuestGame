@@ -1,13 +1,13 @@
 ﻿from questgame.game_items import weapons, armor, spells
-import skills
-from questgame.common.rules import ATTRIBUTES
+from questgame.players import skills
+from questgame.common.rules import PlayerAttributes
 
 class Class(object):
     """description of class"""
     def __init__(self): pass
 
     @property
-    def spell_attack_attribute(self): return ATTRIBUTES.INTELLIGENCE
+    def spell_attack_attribute(self): return PlayerAttributes.INTELLIGENCE
     def is_weapon_proficient(self, player, weapon): return weapon.__class__ in ClassStats.get_weapons(self, player.level)
     def is_skill_proficient(self, player, skill):
         for sk in ClassStats.get_skills(self, player.level):

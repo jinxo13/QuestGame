@@ -72,7 +72,7 @@ def __continue_game():
 
 def __do_action(action, item=None, amount=0):
     """Common action method"""
-    print 'ACTION: {}, ITEM: {}'.format(action, item)
+    print('ACTION: {}, ITEM: {}'.format(action, item))
     session.attributes['action'] = action
     user_id = session.user.userId
     if not game_manager.is_game_started(user_id):

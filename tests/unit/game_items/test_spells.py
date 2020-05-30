@@ -1,10 +1,10 @@
 import unittest
 import questgame.game_items.spells as spells
-from questgame.common.rules import Effects
+from questgame.common.rules import Effects, Actions
 
 class mockPlayerClass:
     def __init__(self):
-        self.spell_attack_attribute = spells.ATTRIBUTES.WISDOM
+        self.spell_attack_attribute = spells.PlayerAttributes.WISDOM
     def get_spell_save_will(self):
         return 3
         
@@ -50,21 +50,21 @@ class mockItem:
     def __init__(self, name):
         self.name = name
         self.spell_resistance = 0
-        self.open = False
-        self.locked = False
+        self.is_open = False
+        self.is_locked = False
         self.hit_points = 10
     def class_name(self):
         return self.__class__.__name__
     def affect(self, source, effect, params):
         pass
-    def open_with_spell(self, spell, caster):
-        self.open = True
-    def close_with_spell(self, spell, caster):
-        self.open = False
-    def lock_with_spell(self, spell, caster):
-        self.locked = True
-    def unlock_with_spell(self, spell, caster):
-        self.locked = False
+    def open(self, caster, spell):
+        self.is_open = True
+    def close(self, caster, spell):
+        self.is_open = False
+    def lock(self, caster, spell):
+        self.is_locked = True
+    def unlock(self, caster, spell):
+        self.is_locked = False
 
 class TestSpells(unittest.TestCase):
 
@@ -101,41 +101,48 @@ class TestSpells(unittest.TestCase):
         player = mockPlayer('player')
         chest = mockItem('chest')
         spell = spells.OpenSpell()
-        self.assertFalse(chest.open)
+        self.assertFalse(chest.is_open)
         self.assertTrue(spell.cast(player, chest))
-        self.assertTrue(chest.open)
+        self.assertTrue(chest.is_open)
 
     def test_close_spell(self):
         #open spell closes openable objects
         player = mockPlayer('player')
         chest = mockItem('chest')
-        chest.open = True
+        chest.is_open = True
+
         spell = spells.CloseSpell()
-        self.assertTrue(chest.open)
+        self.assertTrue(chest.is_open)
         self.assertTrue(spell.cast(player, chest))
-        self.assertFalse(chest.open)
+        self.assertFalse(chest.is_open)
 
     def test_unlock_spell(self):
         #Unlock spell unlocks openable objects
         #If already unlocked it's 100% effective....
         player = mockPlayer('player')
         chest = mockItem('chest')
-        chest.locked = True
+        chest.is_locked = True
         spell = spells.UnlockSpell()
-        self.assertTrue(chest.locked)
+        self.assertTrue(chest.is_locked)
+        player.current_action = Actions.CAST
         self.assertTrue(spell.cast(player, chest))
-        self.assertFalse(chest.locked)
+        self.assertFalse(chest.is_locked)
+        player.current_action = False
 
     def test_lock_spell(self):
         #Lock spell locks openable objects
         #If already locked it's 100% effective....
         player = mockPlayer('player')
         chest = mockItem('chest')
-        chest.locked = False
+
         spell = spells.LockSpell()
-        self.assertFalse(chest.locked)
+        self.assertFalse(chest.is_locked)
+
+        player.current_action = Actions.CAST
         self.assertTrue(spell.cast(player, chest))
-        self.assertTrue(chest.locked)
+        player.current_action = False
+
+        self.assertTrue(chest.is_locked)
 
     def test_harm_spell(self):
         #Harm spell harms target (or heals undead)

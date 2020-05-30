@@ -1,11 +1,11 @@
-﻿from questgame.common.rules import ATTRIBUTES, GameRules, Effects, Size, Material
-from questgame.common.base_classes import Modifiers, BaseStats, Observable
+﻿from questgame.common.rules import PlayerAttributes, GameRules, Effects, Size, Material
+from questgame.common.base_classes import Bonuses, BaseStats, Observable, Serializable
 from questgame.common.utils import Helpers
 from questgame.game_items import spells
 from questgame.interface.alexa.utils import ReplyHelpers
 import copy
 
-class Item(Modifiers, Observable):
+class Item(Bonuses, Observable, Serializable):
 
     @property
     def count(self):
@@ -19,15 +19,21 @@ class Item(Modifiers, Observable):
     @property
     def size(self): return Size.Medium
 
+    @property
     def is_fragile(self): return False
 
     @property
+    def difficulty_class(self):
+        return self._get_stats().get_difficulty_class(self)
+
+    @property
     def max_hit_points(self):
-        return ItemStats._HIT_POINTS[self.size][0 if self.is_fragile() else 1]
+        hit_points = ItemStats.get_hit_points(self)
+        return 1000000 if hit_points == -1 else hit_points
 
     @property
     def hit_points(self):
-        return self.__hit_points if self.__hit_points != -1 else 1000000
+        return 1000000 if self.__hit_points == -1 else self.__hit_points
 
     def one_of(self):
         result = copy.copy(self)
@@ -43,11 +49,6 @@ class Item(Modifiers, Observable):
             super(Item,self).__init__(stats)
         else:
             super(Item,self).__init__(ItemStats)
-
-    def throw_strike(self, weapon, attacker):
-        #Hit by thrown object
-        #TODO: Determine if hit by weapon then any effect
-        return True
 
     def affect(self, source, effect, params):
         '''
@@ -83,30 +84,11 @@ class Item(Modifiers, Observable):
             return False
 
     def repair(self, amount):
-        if amount < 0: return
-        if self.count == 0: return #Nothing to repair
-        if self.__hit_points == -1: return #Can't be damaged/repaired
+        if amount < 0: return False
+        if self.count == 0: return False#Nothing to repair
+        if self.__hit_points == -1: return False#Can't be damaged/repaired
         self.__hit_points = min(self.__hit_points + amount, self.max_hit_points)
-
-    @staticmethod
-    def create_from_state(state, count=None):
-        cls = Helpers.class_for_name(state['module'],state['class'])
-        if not count is None:
-            state['count'] = count
-        if cls == Scroll:
-            spell = spells.Spell.create_from_state(state['spell'])
-            inst = cls(spell)
-        else:
-            inst = cls()
-        inst.__count = int(Helpers.get_dict_value(state, 'count', default=1))
-        return inst
-    
-    def get_state(self):
-        result = {}
-        result['class'] = self.__class__.__name__
-        result['module'] = self.__module__
-        result['count'] = self.__count
-        return result
+        return True
 
     @property
     def name(self): return self.__class__.__name__
@@ -124,7 +106,7 @@ class Item(Modifiers, Observable):
             return 'an'
         return 'a'
     @property
-    def armor_class(self): return BaseStats.get_ac_class(self)
+    def armor_class(self): return BaseStats.get_armor_class(self)
     @property
     def weight(self): return BaseStats.get_weight(self) * self.count
     @property
@@ -135,7 +117,7 @@ class Item(Modifiers, Observable):
     def is_match(self, text):
         if text is None: return False
         for match in BaseStats.get_matches(self):
-            if text.lower() == match or text.lower() == match+'s':
+            if text.lower() == match or text.lower() == match+'s' or text.lower() == self.text_prefix + ' ' + match:
                 return True
         return False
 
@@ -144,6 +126,7 @@ class Item(Modifiers, Observable):
 class Edible(Item):
     @property
     def size(self): return Size.Small
+    @property
     def is_fragile(self): return True
 
     def _effect(self, action, target):
@@ -209,10 +192,6 @@ class Scroll(Item):
     def __init__(self, spell):
         super(Scroll, self).__init__()
         self.__spell = spell
-    def get_state(self):
-        result = super(Scroll, self).get_state()
-        result['spell'] = self.spell.get_state()
-        return result
 
 class Key(Item):
     @property
@@ -227,7 +206,7 @@ class CellRoomKey(Key): pass
 class WeaponsRoomKey(Key): pass
 
 class ItemStats(BaseStats):
-    _AC_CLASS = BaseStats._AC_CLASS
+    _ARMOR_CLASS = BaseStats._ARMOR_CLASS
     _WEIGHT = BaseStats._WEIGHT
     _COST = BaseStats._COST
     _NAME = BaseStats._NAME
@@ -235,31 +214,10 @@ class ItemStats(BaseStats):
     _SKILL_MODIFIERS = BaseStats._SKILL_MODIFIERS
     _NAME_MATCHES = BaseStats._NAME_MATCHES
     _HEAL_AMOUNT = 1
-    _MATERIAL = 2
-
-    _HIT_POINTS = {
-        #[fragile, resilient] -1 = unbreakable
-        Size.Tiny: [2, 5],
-        Size.Small: [3, 10],
-        Size.Medium: [4, 18],
-        Size.Large: [5, 27],
-        Size.Huge: [50, -1],
-        Size.Gargantuan: [100, -1]
-    }
-
-    _AC_TYPES = {
-        8: [Material.Food],
-        11: [Material.Cloth, Material.Paper, Material.Rope],
-        13: [Material.Crystal, Material.Glass, Material.Ice],
-        15: [Material.Wood, Material.Bone, Material.Copper],
-        17: [Material.Stone, Material.Gold],
-        19: [Material.Iron, Material.Steel, Material.Silver],
-        21: [Material.Mithral],
-        23: [Material.Adamantine]
-    }
+    _MATERIAL = BaseStats._MATERIAL
 
     _STATS = {
-        StrengthRing: { _NAME_MATCHES: ['strength ring','ring'], _WEIGHT: 0.1, _COST: 5, _ATTR_MODIFIERS: {'BONUS':[ATTRIBUTES.STRENGTH,2]}, _MATERIAL: Material.Steel },
+        StrengthRing: { _NAME_MATCHES: ['strength ring','ring'], _WEIGHT: 0.1, _COST: 5, _ATTR_MODIFIERS: {'BONUS':[PlayerAttributes.STRENGTH,2]}, _MATERIAL: Material.Steel },
         CellRoomKey: { _NAME_MATCHES: ['key'], _WEIGHT: 0.1, _COST: 0, _MATERIAL: Material.Steel },
         WeaponsRoomKey: { _NAME_MATCHES: ['key'], _WEIGHT: 0.1, _COST: 0, _MATERIAL: Material.Steel },
         LockPick: { _NAME_MATCHES: ['lock pick','lockpick'], _WEIGHT: 0.1, _COST: 0, _MATERIAL: Material.Steel },
@@ -276,14 +234,6 @@ class ItemStats(BaseStats):
         CellRoomKey: 1,
         WeaponsRoomKey: 2,
         }
-
-    @staticmethod
-    def get_ac_class(item):
-        material = ItemStats._STATS[item.__class__][ItemStats._MATERIAL]
-        for key in ItemStats._AC_TYPES.keys():
-            if material in ItemStats._AC_TYPES[key]:
-                return key
-        return 0
 
     @staticmethod
     def get_key_id(key):

@@ -10,12 +10,10 @@ class TestPlayer(unittest.TestCase):
 
     def test_add_experience(self):
         player = players.Thief()
-
-       # Level - [Experience, Proficiency]
-       # 1: [300,2],
-       # 2: [900,2],
-       # 3: [2700,2],
-
+        # Level - [Experience, Proficiency]
+        # 1: [300,2],
+        # 2: [900,2],
+        # 3: [2700,2],
         #Test adding experience and moving levels
         self.assertEqual(player.level, 1)
         player.add_experience(299)
@@ -83,32 +81,31 @@ class TestPlayer(unittest.TestCase):
         player = players.Thief()
         self.assertEqual(player.level, 1)
         self.assertEqual(player.other_attack_bonus, 0)
-        player.add_modifier('BECAUSE',players.ATTRIBUTES.ATTACK, 3)
+        player.add_bonus('BECAUSE',players.PlayerAttributes.ATTACK, 3)
         self.assertEqual(player.other_attack_bonus, 3)
-        player.remove_modifier('BECAUSE')
+        player.remove_bonus('BECAUSE')
         self.assertEqual(player.other_attack_bonus, 0)
 
     def test_determine_ability_modifier(self):
         #Attack modifier is based on the weapons modifier attribute
         player = players.Thief()
-        import questgame.game_items.weapons as weapons
-        
-        butter_knife = Mock(spec=weapons.Weapon)
+
+        butter_knife = MockHelper.get_mock_weapon()
         player.is_carrying = Mock(return_value=True)
         self.assertTrue(player.equip_weapon(butter_knife))
-        butter_knife_modifier = PropertyMock(return_value=[players.ATTRIBUTES.DEXTERITY])
+        butter_knife_modifier = PropertyMock(return_value=[players.PlayerAttributes.DEXTERITY])
         type(butter_knife).modifier_attributes = butter_knife_modifier
-        butter_knife.get_modifier_value = Mock(return_value=0)
+        
         
         self.assertEqual(player.dexterity, 11)
-        butter_knife.get_modifier_value.assert_called_once
+        butter_knife.get_bonus_value.assert_called_once
         butter_knife_modifier.assert_called_once
 
         #Should be round down of (x - 10)/2
         attack = player.determine_ability_modifier()
         self.assertEqual(attack, math.floor((11 - 10)/2))
 
-        type(butter_knife).modifier_attributes = PropertyMock(return_value=[players.ATTRIBUTES.INTELLIGENCE])
+        type(butter_knife).modifier_attributes = PropertyMock(return_value=[players.PlayerAttributes.INTELLIGENCE])
         self.assertEqual(player.intelligence, 8)
         attack = player.determine_ability_modifier()
         self.assertEqual(attack, math.floor((8 - 10)/2))
@@ -228,10 +225,7 @@ class TestPlayer(unittest.TestCase):
     def test_carry_capacity(self):
         #Rule = current strength * 15
         player = players.Thief()
-        start_strength = player.strength
         self.assertEqual(player.carry_capacity, player.strength * 15)
-        player.add_modifier('BONUS', players.ATTRIBUTES.STRENGTH, 2)
-        self.assertEqual(player.carry_capacity, (start_strength + 2) * 15)
 
     def test_carry_weight(self):
         #Nothing to test
@@ -259,7 +253,7 @@ class TestPlayer(unittest.TestCase):
 
     def test_charisma(self):
         player = players.Thief()
-        self.assertEqual(player.charisma, player.get_attribute_current(players.ATTRIBUTES.CHARISMA))
+        self.assertEqual(player.charisma, player.get_attribute_current(players.PlayerAttributes.CHARISMA))
 
     def test_is_weapon_equipped(self):
         player = players.Thief()
@@ -285,42 +279,27 @@ class TestPlayer(unittest.TestCase):
 
     def test_constitution(self):
         player = players.Thief()
-        self.assertEqual(player.constitution, player.get_attribute_current(players.ATTRIBUTES.CONSITUTION))
+        self.assertEqual(player.constitution, player.get_attribute_current(players.PlayerAttributes.CONSITUTION))
 
-    def test_constitution_modifier(self):
+    def test_constitution_bonus(self):
         player = players.Thief()
-        self.assertEqual(player.constitution_modifier, player.get_modifier_value(players.ATTRIBUTES.CONSITUTION))
+        self.assertEqual(player.constitution_bonus, player.get_bonus_value(players.PlayerAttributes.CONSITUTION))
         
     def test_create_from_state(self):
-        attributes = {
-            str(players.ATTRIBUTES.STRENGTH): 9,
-            str(players.ATTRIBUTES.WISDOM): 4
-        }
-        state = {
-            'class': 'Thief',
-            'module': 'questgame.players.players',
-            'max_hit_points': 10,
-            'hit_points': 9,
-            'max_mana_points': 15,
-            'mana_points': 11,
-            'is_dead': False,
-            'items': [],
-            'learned_spells': [],
-            'attributes': json.dumps(attributes)
-        }
-        #state = players.Thief().get_state()
         thief = players.Thief()
-        thief = players.Player.create_from_state(state)
-        self.assertEqual(thief.__class__.__name__, 'Thief')
-        self.assertEqual(thief.max_hit_points, 10)
-        self.assertEqual(thief.hit_points, 9)
-        self.assertEqual(thief.max_mana_points, 15)
-        self.assertEqual(thief.mana_points, 11)
-        self.assertFalse(thief.is_unconscious)
-        self.assertFalse(thief.is_dead)
-        self.assertEqual(thief.strength, 9)
-        self.assertEqual(thief.wisdom, 4)
-        self.assertEqual(thief.dexterity, 0)
+        state = thief.get_state()
+        thief_copy = players.Player.create_from_state(state)
+        self.assertNotEqual(thief_copy, thief)
+        self.assertEqual(thief_copy.__class__.__name__, 'Thief')
+        self.assertEqual(thief_copy.max_hit_points, thief.max_hit_points)
+        self.assertEqual(thief_copy.hit_points, thief.hit_points)
+        self.assertEqual(thief_copy.max_mana_points, thief.max_mana_points)
+        self.assertEqual(thief_copy.mana_points, thief.mana_points)
+        self.assertFalse(thief_copy.is_unconscious, thief.is_unconscious)
+        self.assertFalse(thief_copy.is_dead, thief.is_dead)
+        self.assertEqual(thief_copy.strength, thief.strength)
+        self.assertEqual(thief_copy.wisdom, thief.wisdom)
+        self.assertEqual(thief_copy.dexterity, thief.dexterity)
 
     def test_default_armor(self):
         import questgame.game_items.armor as armor
@@ -348,11 +327,11 @@ class TestPlayer(unittest.TestCase):
 
     def test_dexterity(self):
         player = players.Thief()
-        self.assertEqual(player.dexterity, player.get_attribute_current(players.ATTRIBUTES.DEXTERITY))
+        self.assertEqual(player.dexterity, player.get_attribute_current(players.PlayerAttributes.DEXTERITY))
 
-    def test_dexterity_modifier(self):
+    def test_dexterity_bonus(self):
         player = players.Thief()
-        self.assertEqual(player.dexterity_modifier, player.get_modifier_value(players.ATTRIBUTES.DEXTERITY))
+        self.assertEqual(player.dexterity_bonus, player.get_bonus_value(players.PlayerAttributes.DEXTERITY))
 
     def test_drink(self):
         player = players.Thief()
@@ -381,7 +360,7 @@ class TestPlayer(unittest.TestCase):
 
     def test_drop(self):
         player = players.Thief()
-        penny  = self.get_mock_item()
+        penny  = MockHelper.get_mock_item()
 
         #Must be carrying item, then calls remove - which returns the item
         player.is_carrying = Mock(return_value=True)
@@ -422,7 +401,7 @@ class TestPlayer(unittest.TestCase):
         self.assertFalse(player.equip_armor(fake_armor))
 
         #Not carrying
-        good_armor = self.get_mock_armor()
+        good_armor = MockHelper.get_mock_armor()
         player.is_carrying = Mock(return_value=False)
         self.assertFalse(player.equip_armor(good_armor))
         player.is_carrying.assert_called_once()
@@ -448,7 +427,7 @@ class TestPlayer(unittest.TestCase):
         self.assertFalse(player.equip_weapon(fake_weapon))
 
         #Not carrying
-        good_weapon = self.get_mock_weapon()
+        good_weapon = MockHelper.get_mock_weapon()
         player.is_carrying = Mock(return_value=False)
         self.assertFalse(player.equip_weapon(good_weapon))
         player.is_carrying.assert_called_once()
@@ -466,11 +445,11 @@ class TestPlayer(unittest.TestCase):
 
     def test_get_attribute_base(self):
         player = players.Thief()
-        self.assertEqual(player.get_attribute_base(players.ATTRIBUTES.STRENGTH),10)
+        self.assertEqual(player.get_attribute_base(players.PlayerAttributes.STRENGTH),10)
 
     def test_get_attribute_current(self):
         player = players.Thief()
-        self.assertEqual(player.get_attribute_current(players.ATTRIBUTES.STRENGTH),10)
+        self.assertEqual(player.get_attribute_current(players.PlayerAttributes.STRENGTH),10)
 
     def test_get_attribute_modifier(self):
         player = players.Thief()
@@ -478,14 +457,14 @@ class TestPlayer(unittest.TestCase):
         #Confirm attribute values
         self.assertEqual(player.dexterity_base, 11)
         self.assertEqual(player.strength_base, 10)
-        attr_val = player.get_attribute_modifier(players.ATTRIBUTES.STRENGTH)
+        attr_val = player.get_attribute_modifier(players.PlayerAttributes.STRENGTH)
         #Should be round down of (x - 10)/2
         self.assertEqual(attr_val, math.floor((10 - 10)/2))
-        attr_val = player.get_attribute_modifier(players.ATTRIBUTES.DEXTERITY)
+        attr_val = player.get_attribute_modifier(players.PlayerAttributes.DEXTERITY)
         self.assertEqual(attr_val, math.floor((11 - 10)/2))
 
         #Try a couple of attributes, should select the highest
-        attr_val = player.get_attribute_modifier([players.ATTRIBUTES.STRENGTH, players.ATTRIBUTES.DEXTERITY])
+        attr_val = player.get_attribute_modifier([players.PlayerAttributes.STRENGTH, players.PlayerAttributes.DEXTERITY])
         self.assertEqual(attr_val, math.floor((11 - 10)/2))
 
 
@@ -513,35 +492,9 @@ class TestPlayer(unittest.TestCase):
         self.assertTrue(player.equip_weapon(rat.default_weapon))
         self.assertEqual(player.get_equipped_weapon(), rat.default_weapon)
 
-    def get_mock_item(self, spec=None):
-        item = Mock()
-        if spec != None:
-            item = Mock(spec=spec)
-        item.weight = 1
-        item.count = 1
-        item.single_weight = 1
-        item.create_from_state = Mock(return_value=item)
-        return item
-
-    def get_mock_armor(self):
-        import questgame.game_items.armor as armor
-        return self.get_mock_item(spec=armor.Armor)
-
-    def get_mock_weapon(self):
-        import questgame.game_items.weapons as weapons
-        return self.get_mock_item(spec=weapons.Weapon)
-
-    def get_mock_scroll(self):
-        import questgame.game_items.items as items
-        return self.get_mock_item(items.Scroll)
-
-    def get_mock_beer(self):
-        import questgame.game_items.items as items
-        return self.get_mock_item(items.Beer)
-
     def test_get_item(self):
         player = players.Thief()
-        penny = self.get_mock_item()
+        penny = MockHelper.get_mock_item()
 
         #Get an item from inventory
         #Returns False if no such item
@@ -552,7 +505,7 @@ class TestPlayer(unittest.TestCase):
 
     def test_get_item_by_name(self):
         player = players.Thief()
-        penny = self.get_mock_item()
+        penny = MockHelper.get_mock_item()
 
         #Get an item from inventory
         #Returns False if no such item
@@ -574,7 +527,7 @@ class TestPlayer(unittest.TestCase):
 
     def test_get_rid_of_one(self):
         player = players.Thief()
-        beer = self.get_mock_beer()
+        beer = MockHelper.get_mock_beer()
 
         #Not carrying a penny
         #Carrying 2 then 1 should be left
@@ -597,13 +550,13 @@ class TestPlayer(unittest.TestCase):
     def test_get_state(self):
         player = players.Thief()
         state = player.get_state()
-        self.assertIsInstance(state, dict)
+        self.assertIsInstance(state, str)
 
     def test_give(self):
         player = players.Thief()
         rat = players.Rat()
 
-        penny = self.get_mock_item()
+        penny = MockHelper.get_mock_item()
 
         #Can give
         player.is_carrying = Mock(return_value=True)
@@ -623,7 +576,7 @@ class TestPlayer(unittest.TestCase):
         player = players.Thief()
         self.assertFalse(player.has_weapon_equipped())
 
-        dagger = self.get_mock_weapon()
+        dagger = MockHelper.get_mock_weapon()
         player.is_carrying = Mock(return_value=True)
         self.assertTrue(player.equip_weapon(dagger))
         self.assertTrue(player.has_weapon_equipped())
@@ -632,7 +585,7 @@ class TestPlayer(unittest.TestCase):
         player = players.Thief()
         self.assertFalse(player.has_armor_equipped())
 
-        armor = self.get_mock_armor()
+        armor = MockHelper.get_mock_armor()
         player.is_carrying = Mock(return_value=True)
         self.assertTrue(player.equip_armor(armor))
         self.assertTrue(player.has_armor_equipped())
@@ -676,17 +629,17 @@ class TestPlayer(unittest.TestCase):
         player = players.Thief()
         self.assertEqual(player.hit_points, player.max_hit_points)
          
-    def test_initiative_modifier(self):
+    def test_initiative_bonus(self):
         player = players.Thief()
-        self.assertEqual(player.initiative_modifier, player.get_modifier_value(players.ATTRIBUTES.INITIATIVE))
+        self.assertEqual(player.initiative_bonus, player.get_bonus_value(players.PlayerAttributes.INITIATIVE))
 
     def test_intelligence(self):
         player = players.Thief()
-        self.assertEqual(player.intelligence, player.get_attribute_current(players.ATTRIBUTES.INTELLIGENCE))
+        self.assertEqual(player.intelligence, player.get_attribute_current(players.PlayerAttributes.INTELLIGENCE))
 
-    def test_intelligence_modifier(self):
+    def test_intelligence_bonus(self):
         player = players.Thief()
-        self.assertEqual(player.intelligence_modifier, player.get_modifier_value(players.ATTRIBUTES.INTELLIGENCE))
+        self.assertEqual(player.intelligence_bonus, player.get_bonus_value(players.PlayerAttributes.INTELLIGENCE))
 
     def test_inventory(self):
         player = players.Thief()
@@ -899,8 +852,8 @@ class TestPlayer(unittest.TestCase):
         #Already looted
         self.assertFalse(player.loot_body(rat))
 
-        penny = self.get_mock_item()
-        quarter = self.get_mock_item()
+        penny = MockHelper.get_mock_item()
+        quarter = MockHelper.get_mock_scroll()
 
         #1 item
         self.assertTrue(zombie_rat.pickup(penny))
@@ -961,13 +914,13 @@ class TestPlayer(unittest.TestCase):
         #If armor equip it - if no armor equipped and proficient
 
         #Scroll
-        scroll = self.get_mock_scroll()
+        scroll = MockHelper.get_mock_scroll()
         player.learn_spell = Mock(return_value=True)
         self.assertTrue(player.pickup(scroll))
         player.learn_spell.assert_called_once()
 
         #Weapon
-        weapon = self.get_mock_weapon()
+        weapon = MockHelper.get_mock_weapon()
         weapon.get_modifier_value = Mock(return_value=0)
 
         #Not proficient
@@ -985,13 +938,13 @@ class TestPlayer(unittest.TestCase):
         self.assertEqual(player.get_equipped_weapon(), weapon)
 
         #Already equipped
-        another_weapon = self.get_mock_weapon()
+        another_weapon = MockHelper.get_mock_weapon()
         self.assertTrue(player.pickup(another_weapon))
         self.assertTrue(player.has_weapon_equipped())
         self.assertEqual(player.get_equipped_weapon(), weapon)
 
         #Armor
-        myarmor = self.get_mock_armor()
+        myarmor = MockHelper.get_mock_armor()
         myarmor.get_modifier_value = Mock(return_value=0)
 
         #Not proficient
@@ -1009,7 +962,7 @@ class TestPlayer(unittest.TestCase):
         self.assertEqual(player.get_equipped_armor(), myarmor)
 
         #Already equipped
-        another_armor = self.get_mock_armor()
+        another_armor = MockHelper.get_mock_armor()
         self.assertTrue(player.pickup(another_armor))
         self.assertTrue(player.has_armor_equipped())
         self.assertEqual(player.get_equipped_armor(), myarmor)
@@ -1022,7 +975,7 @@ class TestPlayer(unittest.TestCase):
         #Removing equipped weapon resets to default
 
         #Armor
-        myarmor = self.get_mock_armor()
+        myarmor = MockHelper.get_mock_armor()
         myarmor.get_modifier_value = Mock(return_value=0)
 
         #Nothing to remove
@@ -1038,7 +991,7 @@ class TestPlayer(unittest.TestCase):
         self.assertFalse(player.has_armor_equipped())
 
         #Remove equipped weapon
-        weapon = self.get_mock_weapon()
+        weapon = MockHelper.get_mock_weapon()
         weapon.get_modifier_value = Mock(return_value=0)
         player.character_class.is_weapon_proficient = Mock(return_value=True)
         self.assertTrue(player.pickup(weapon))
@@ -1066,11 +1019,11 @@ class TestPlayer(unittest.TestCase):
 
     def test_strength(self):
         player = players.Thief()
-        self.assertEqual(player.strength, player.get_attribute_current(players.ATTRIBUTES.STRENGTH))
+        self.assertEqual(player.strength, player.get_attribute_current(players.PlayerAttributes.STRENGTH))
 
-    def test_strength_modifier(self):
+    def test_strength_bonus(self):
         player = players.Thief()
-        self.assertEqual(player.strength_modifier, player.get_modifier_value(players.ATTRIBUTES.STRENGTH))
+        self.assertEqual(player.strength_bonus, player.get_bonus_value(players.PlayerAttributes.STRENGTH))
 
     def test_strike(self):
         player = players.Thief()
@@ -1088,8 +1041,8 @@ class TestPlayer(unittest.TestCase):
     def test_throw(self):
         player = players.Thief()
         rat = players.Rat()
-        dagger = self.get_mock_weapon()
-        not_a_dagger = self.get_mock_item()
+        dagger = MockHelper.get_mock_weapon()
+        not_a_dagger = MockHelper.get_mock_item()
         
         #Must be carrying item
         #Item must be a throwable weapon
@@ -1116,14 +1069,14 @@ class TestPlayer(unittest.TestCase):
 
     def test_determine_throw_bonus(self):
         player = players.Thief()
-        self.assertEqual(player.determine_throw_bonus(), player.get_attribute_current(players.ATTRIBUTES.THROW))
+        self.assertEqual(player.determine_throw_bonus(), player.get_attribute_current(players.PlayerAttributes.THROW))
 
     def test_wisdom(self):
         player = players.Thief()
-        self.assertEqual(player.wisdom, player.get_attribute_current(players.ATTRIBUTES.WISDOM))
-    def test_wisdom_modifier(self):
+        self.assertEqual(player.wisdom, player.get_attribute_current(players.PlayerAttributes.WISDOM))
+    def test_wisdom_bonus(self):
         player = players.Thief()
-        self.assertEqual(player.wisdom_modifier, player.get_modifier_value(players.ATTRIBUTES.WISDOM))
+        self.assertEqual(player.wisdom_bonus, player.get_bonus_value(players.PlayerAttributes.WISDOM))
 
     def test_wound(self):
         player = players.Thief()

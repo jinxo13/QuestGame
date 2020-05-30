@@ -1,5 +1,5 @@
 ﻿from questgame.common.dice import Dice
-from questgame.common.rules import ATTRIBUTES
+from questgame.common.rules import PlayerAttributes
 
 class Skill(object):
     """description of class"""
@@ -7,7 +7,7 @@ class Skill(object):
 
 class DextrousSkill(Skill):
     @property
-    def attribute_modifier(self): return ATTRIBUTES.DEXTERITY
+    def attribute_modifier(self): return PlayerAttributes.DEXTERITY
 
 class DextrousAttackSkill(DextrousSkill):
     """description of class"""
@@ -18,12 +18,13 @@ class DextrousAttackSkill(DextrousSkill):
             return 0
         dmg_dice = player.character_class.get_skill_damage(self, player.level)
         dmg = Dice.roll(dmg_dice[0],dmg_dice[1])
-        mod = player.get_equipped_weapon().get_modifier_value(self.__class__)
+        #TODO is this right?
+        mod = player.get_attribute_modifier([self.attribute_modifier])
         return dmg + mod
 
 class StrengthAttackSkill(DextrousAttackSkill):
     @property
-    def attribute_modifier(self): return ATTRIBUTES.STRENGTH
+    def attribute_modifier(self): return PlayerAttributes.STRENGTH
 
 class Stealth(DextrousSkill): pass
 class LockPicking(DextrousSkill): pass

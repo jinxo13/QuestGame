@@ -1,23 +1,11 @@
-﻿from questgame.common.base_classes import BaseStats, Modifiers
-from questgame.common.rules import GameRules, ATTRIBUTES, Effects
+﻿from questgame.common.base_classes import BaseStats, Bonuses, Serializable
+from questgame.common.rules import GameRules, PlayerAttributes, Effects
 from questgame.common.dice import Dice
 from questgame.common.utils import Helpers
 from questgame.interface.alexa.utils import ReplyHelpers
 
-class Spell(Modifiers):
+class Spell(Bonuses, Serializable):
     """Spell abstract class"""
-
-    @staticmethod
-    def create_from_state(state):
-        cls = Helpers.class_for_name(state['module'],state['class'])
-        inst = cls()
-        return inst
-    
-    def get_state(self):
-        result = {}
-        result['class'] = self.__class__.__name__
-        result['module'] = self.__module__
-        return result
 
     @staticmethod
     def _get_stats(): return SpellStats
@@ -61,7 +49,7 @@ class Spell(Modifiers):
 
 class DamageSpell(Spell):
     @property
-    def saving_throw_attribute(self): return ATTRIBUTES.DEXTERITY
+    def saving_throw_attribute(self): return PlayerAttributes.DEXTERITY
 
     def _damage(self, caster):
         dice = SpellStats.get_damage_dice(self)
@@ -103,7 +91,7 @@ class EffectSpell(Spell):
         return GameRules.determine_spell_difficulty_class(self, caster)
 
     @property
-    def saving_throw_attribute(self): return ATTRIBUTES.DEXTERITY
+    def saving_throw_attribute(self): return PlayerAttributes.DEXTERITY
 
     def _hit(self, caster, target):
         #If casting on one self it always hits
@@ -124,27 +112,27 @@ class EffectSpell(Spell):
 
 class MentalSpell(Spell):
     @property
-    def saving_throw_attribute(self): return ATTRIBUTES.WISDOM
+    def saving_throw_attribute(self): return PlayerAttributes.WISDOM
 
 class OpenSpell(EffectSpell):
     def _effect(self, caster, target):
-        target.open_with_spell(self, caster)
+        target.open(caster, spell=self)
 
 class CloseSpell(EffectSpell):
     def _effect(self, caster, target):
-        target.close_with_spell(self, caster)
+        target.close(caster, spell=self)
 
 class UnlockSpell(EffectSpell):
     def _effect(self, caster, target):
-        target.unlock_with_spell(self, caster)
+        target.unlock(caster, spell=self)
 
 class LockSpell(UnlockSpell):
     def _effect(self, caster, target):
-        target.lock_with_spell(self, caster)
+        target.lock(caster, spell=self)
 
 class HarmSpell(EffectSpell):
     @property
-    def saving_throw_attribute(self): return ATTRIBUTES.CONSITUTION
+    def saving_throw_attribute(self): return PlayerAttributes.CONSITUTION
 
     def _effect(self, caster, target):
         if target.is_undead:
@@ -160,7 +148,7 @@ class HealSpell(EffectSpell):
             target.heal(10*min(caster.level,15))
 
 class SpellStats(BaseStats):
-    _AC_CLASS = BaseStats._AC_CLASS
+    _ARMOR_CLASS = BaseStats._ARMOR_CLASS
     _WEIGHT = BaseStats._WEIGHT
     _COST = BaseStats._COST
     _NAME = BaseStats._NAME
@@ -171,13 +159,13 @@ class SpellStats(BaseStats):
     _LEVEL = 2
 
     _STATS = {
-        FireballSpell: { _NAME_MATCHES: ['fireball','fireball spell'], _AC_CLASS:0, _LEVEL:1, _DAMAGE:[1,6], _WEIGHT:0, _COST:'10' },
-        OpenSpell: { _NAME_MATCHES: ['open','open spell'], _AC_CLASS:0, _LEVEL:1, _WEIGHT:0, _COST:'10' },
-        CloseSpell: { _NAME_MATCHES: ['close','close spell'], _AC_CLASS:0, _LEVEL:1, _WEIGHT:0, _COST:'10' },
-        UnlockSpell: { _NAME_MATCHES: ['unlock','unlock spell'], _AC_CLASS:0, _LEVEL:1, _WEIGHT:0, _COST:'10' },
-        LockSpell: { _NAME_MATCHES: ['lock','lock spell'], _AC_CLASS:0, _LEVEL:1, _WEIGHT:0, _COST:'10' },
-        HealSpell: { _NAME_MATCHES: ['heal','heal spell'], _AC_CLASS:0, _LEVEL:1, _WEIGHT:0, _COST:'10' },
-        HarmSpell: { _NAME_MATCHES: ['harm','harm spell'], _AC_CLASS:0, _LEVEL:1, _WEIGHT:0, _COST:'10' }
+        FireballSpell: { _NAME_MATCHES: ['fireball','fireball spell'], _ARMOR_CLASS:0, _LEVEL:1, _DAMAGE:[1,6], _WEIGHT:0, _COST:'10' },
+        OpenSpell: { _NAME_MATCHES: ['open','open spell'], _ARMOR_CLASS:0, _LEVEL:1, _WEIGHT:0, _COST:'10' },
+        CloseSpell: { _NAME_MATCHES: ['close','close spell'], _ARMOR_CLASS:0, _LEVEL:1, _WEIGHT:0, _COST:'10' },
+        UnlockSpell: { _NAME_MATCHES: ['unlock','unlock spell'], _ARMOR_CLASS:0, _LEVEL:1, _WEIGHT:0, _COST:'10' },
+        LockSpell: { _NAME_MATCHES: ['lock','lock spell'], _ARMOR_CLASS:0, _LEVEL:1, _WEIGHT:0, _COST:'10' },
+        HealSpell: { _NAME_MATCHES: ['heal','heal spell'], _ARMOR_CLASS:0, _LEVEL:1, _WEIGHT:0, _COST:'10' },
+        HarmSpell: { _NAME_MATCHES: ['harm','harm spell'], _ARMOR_CLASS:0, _LEVEL:1, _WEIGHT:0, _COST:'10' }
         }
     @staticmethod
     def get_damage_dice(spell): return SpellStats._STATS[spell.__class__][SpellStats._DAMAGE]
@@ -186,8 +174,10 @@ class SpellStats(BaseStats):
 
     @staticmethod
     def get_spell_by_text(spell_text):
-        for key in SpellStats._STATS.keys():
-            spell = key()
-            if spell.is_match(spell_text):
-                return spell
-        return None
+        return next((spell_cls() for spell_cls in SpellStats._STATS.keys() if spell_cls().is_match(spell_text)), False)
+
+        # for key in SpellStats._STATS.keys():
+        #     spell = key()
+        #     if spell.is_match(spell_text):
+        #         return spell
+        # return None

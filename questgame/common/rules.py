@@ -1,5 +1,86 @@
-﻿from dice import Dice
+﻿from questgame.common.dice import Dice
 from enum import Enum, unique
+
+class Defaults(Enum):
+    ArmorClassBase = 10
+
+class Actions(object):
+    #TODO: Change to Enum
+    PUSH = 0
+    PULL = 1
+    SEARCH = 2
+    OPEN = 3
+    CLOSE= 4
+    LOCK = 5
+    UNLOCK = 6
+    CAST = 7
+    THROW = 8
+    PICK_LOCK = 9
+    WHERE = 10
+    YES = 11
+    NO = 12
+    DESCRIBE = 13
+    STRIKE = 14
+    SHOOT = 15
+    WHAT = 16
+    PICKUP = 17
+    DROP = 18
+    DRINK = 19
+    EAT = 20
+    MONEY = 21
+    BUY = 22
+    SELL = 23
+    WHAT_BUY = 24
+    EQUIP_WEAPON = 25
+    EQUIP_ARMOR = 26
+
+    __STRINGS = [
+    'push', #0
+    'pull',
+    'search',
+    'open',
+    'close',
+    'lock', #5
+    'unlock',
+    'cast',
+    'throw',
+    'pick lock',
+    'where', #10
+    'yes',
+    'no',
+    'describe',
+    'strike',
+    'shoot', #15
+    'what',
+    'pickup',
+    'drop',
+    'drink',
+    'eat', #20
+    'money',
+    'buy',
+    'sell',
+    'list items for sale'
+        ]
+
+    ATTACK_ACTIONS = [STRIKE, SHOOT, CAST]
+    NO_ITEM_ACTIONS = [WHERE, WHAT, SEARCH, NO, YES, MONEY, WHAT_BUY, BUY, SELL]
+    ROOM_ITEM_ACTIONS = [PICKUP, CLOSE, LOCK, OPEN, PICK_LOCK, PULL, PUSH, SEARCH, UNLOCK, CAST, BUY, SELL]
+    PLAYER_ITEM_ACTIONS = [DRINK, DROP, THROW, EAT, MONEY, BUY, SELL]
+    ALLOWED_BATTLE_ACTIONS = [EAT, CAST, DRINK, PICKUP, DESCRIBE, DROP, SHOOT, STRIKE, THROW, WHAT, WHERE]
+    OPENABLE_ACTIONS = [OPEN, CLOSE, PICK_LOCK, UNLOCK, LOCK]
+
+    @staticmethod
+    def get_action_text(action):
+        return Actions.__STRINGS[action]
+
+@unique
+class Difficulty(Enum):
+    VeryEasy = 5
+    Easy = 10
+    Medium = 15
+    Hard = 20
+    VeryHard = 25
+    NearlyImpossible = 30
 
 @unique
 class Size(Enum):
@@ -36,7 +117,7 @@ class Effects(Enum):
     Heal = 2
     Repair = 3
 
-class ATTRIBUTES(object):
+class PlayerAttributes(object):
     STRENGTH = 1
     DEXTERITY = 2
     CONSITUTION = 3
@@ -63,7 +144,7 @@ class ATTRIBUTES(object):
         ]
 
     @staticmethod
-    def get_name(attr): return ATTRIBUTES.__NAMES[attr-1]
+    def get_name(attr): return PlayerAttributes.__NAMES[attr-1]
 
 class DiceRoll:
     @property
@@ -139,30 +220,46 @@ class GameRules(object):
 
     @staticmethod
     def roll_saving_fortitude_throw(player):
-        """ Saving throw from unusual/magic attack - physical attack, or vitality/health attack """
+        '''
+        Saving throw from unusual/magic attack - physical attack, or vitality/health attack
+        '''
         dice_roll = Dice.roll(die=1,sides=20) #1d20
         constitution_modifier = player.constitution_modifier() + player.character_class.get_spell_save_fortitude(player)
         return DiceRoll(dice_roll, constitution_modifier)
 
     @staticmethod
     def roll_initiative_check(player):
-        """ Throw to check who responds first on encounter """
+        '''
+        Throw to check who responds first on encounter
+        1d20 + dexterity modifier + any specific bonus
+        '''
         dice_roll = Dice.roll(die=1,sides=20) #1d20
         dexterity_modifier = GameRules.get_attribute_modifier(player.dexterity)
-        iniative_modifier = player.initiative_modifier
-        return DiceRoll(dice_roll, dexterity_modifier + iniative_modifier)
+        iniative_bonus = player.initiative_bonus
+        return DiceRoll(dice_roll, dexterity_modifier + iniative_bonus)
+
+    @staticmethod
+    def roll_perception_check(player):
+        """ 
+        Throw to check perception, such as mechanical trap detection
+        1d20 + Wisdom modifier
+        (Any other revlevant bonus needs to be added by calling function based on situation)
+        """
+        dice_roll = Dice.roll(die=1,sides=20)
+        modifier = GameRules.get_attribute_modifier(player.wisdom)
+        return DiceRoll(dice_roll, modifier)
 
     @staticmethod
     def roll_skill_check(player, skill):
-        """ Throw to check skill success """
-        dice_roll = Dice.roll(die=1,sides=20) #1d20
+        """ 1d20 throw to check skill success """
+        dice_roll = Dice.roll(die=1,sides=20)
         skill_modifier = player.get_attribute_modifier(skill.attribute_modifier)
         #Other skill misc. modifier
         return DiceRoll(dice_roll, skill_modifier)
 
     @staticmethod
     def determine_spell_difficulty_class(spell, player):
-        return 10 + spell.level + player.get_spell_proficiency(spell) + spell.get_spell_attack_modifier(player)
+        return Difficulty.Easy.value + spell.level + player.get_spell_proficiency(spell) + spell.get_spell_attack_modifier(player)
 
     @staticmethod
     def determine_hit_points(dice, sides, bonus):
@@ -202,8 +299,8 @@ class GameRules(object):
     def roll_trap_attack_score(trap):
         """ Returns dice roll (1D20) + trap modifier """
         attack_roll = Dice.roll(die=1,sides=20) #1d20
-        trap_modifier = trap.get_attack_modifier()
-        return DiceRoll(attack_roll, trap_modifier)
+        trap_attack_bonus = trap.attack_bonus
+        return DiceRoll(attack_roll, trap_attack_bonus)
     
     @staticmethod
     def is_thrown_item_lost():
@@ -273,9 +370,13 @@ class Level(object):
         """Find the right level based on the characters experience"""
         if exp < Level.LEVELS[1][0]: return 1
         if exp >= Level.LEVELS[19][0]: return 20
-        min_exp = 0
-        for i in range(1,20):
-            max_exp = Level.LEVELS[i][0]
-            if exp >= min_exp and exp < max_exp: return i
-            min_exp = max_exp
+        # lvls = {
+        #   1: [300, 2], 
+        #   2: [600, 2], ...
+        #TODO: Add attribute names
+        MAX_EXP = 0
+        LVL_KEY = 0
+        LVL_VAL = 1
+        lvl = next(x for x in Level.LEVELS.items() if exp < x[LVL_VAL][MAX_EXP])
+        return lvl[LVL_KEY]
 

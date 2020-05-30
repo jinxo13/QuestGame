@@ -1,4 +1,14 @@
-﻿class Observable(object):
+﻿import jsonpickle
+from questgame.common.rules import Difficulty, Material, Size, Defaults
+
+class Serializable(object):
+    def get_state(self):
+        return jsonpickle.encode(self)
+    @staticmethod
+    def create_from_state(state):
+        return jsonpickle.decode(state)
+
+class Observable(object):
     def __init__(self):
         self.__observers = []
     
@@ -45,18 +55,60 @@ class BaseStats(object):
     _WEIGHT = 101
     _COST = 102
     _ATTR_MODIFIERS = 103
-    _AC_CLASS = 104
+    _ARMOR_CLASS = 104
     _SKILL_MODIFIERS = 105
     _NAME_MATCHES = 106
+    _DIFFICULTY_CLASS = 107
+    _MATERIAL = 108
+
+    _HIT_POINTS = {
+        #[fragile, resilient] -1 = unbreakable
+        Size.Tiny: [2, 5],
+        Size.Small: [3, 10],
+        Size.Medium: [4, 18],
+        Size.Large: [5, 27],
+        Size.Huge: [50, -1],
+        Size.Gargantuan: [100, -1]
+    }
+
+    _AC_TYPES = {
+        8: [Material.Food],
+        11: [Material.Cloth, Material.Paper, Material.Rope],
+        13: [Material.Crystal, Material.Glass, Material.Ice],
+        15: [Material.Wood, Material.Bone, Material.Copper],
+        17: [Material.Stone, Material.Gold],
+        19: [Material.Iron, Material.Steel, Material.Silver],
+        21: [Material.Mithral],
+        23: [Material.Adamantine]
+    }
+    @staticmethod
+    def get_hit_points(item):
+        val = BaseStats._HIT_POINTS[item.size][0 if item.is_fragile else 1]
+        return val
 
     @staticmethod
     def get_name(item): return item._get_stats()._STATS[item.__class__][BaseStats._NAME]
     @staticmethod
-    def get_ac_class(item):
-        if BaseStats._AC_CLASS in item._get_stats()._STATS[item.__class__].keys():
-            return item._get_stats()._STATS[item.__class__][BaseStats._AC_CLASS]
+    def get_armor_class(item):
+        item_stats = item._get_stats()
+        #Find specific value
+        if BaseStats._ARMOR_CLASS in item_stats._STATS[item.__class__].keys():
+            return item_stats._STATS[item.__class__][BaseStats._ARMOR_CLASS]
         else:
-            return item._get_stats().get_ac_class(item)
+            #Fallback on material
+            if BaseStats._MATERIAL in item_stats._STATS[item.__class__].keys():
+                material = item_stats._STATS[item.__class__][BaseStats._MATERIAL]
+                return next(key for key in BaseStats._AC_TYPES.keys() if material in BaseStats._AC_TYPES[key])
+        return Defaults.ArmorClassBase
+
+    @staticmethod
+    def get_difficulty_class(item):
+        item_stats = item._get_stats()
+        if BaseStats._DIFFICULTY_CLASS in item_stats._STATS[item.__class__].keys():
+            return item_stats._STATS[item.__class__][BaseStats._DIFFICULTY_CLASS]
+        else:
+            return Difficulty.Easy
+    
     @staticmethod
     def get_weight(item): return float(item._get_stats()._STATS[item.__class__][BaseStats._WEIGHT])
     @staticmethod
@@ -76,37 +128,33 @@ class BaseStats(object):
         return item._get_stats()._STATS[item.__class__][BaseStats._NAME_MATCHES]
 
 
-class Modifiers(object):
+class Bonuses(object):
     @property
     def class_name(self): return self.__class__.__name__
 
     def __init__(self, stats):
-        self.__modifiers = {}
+        self.__bonuses = {}
         if stats:
             mods = stats.get_attribute_modifiers(self)
             for key in mods:
-                self.add_modifier('ATTR_'+key, mods[key][0], mods[key][1])
+                self.add_bonus('ATTR_'+key, mods[key][0], mods[key][1])
             mods = stats.get_skill_modifiers(self)
             for key in mods:
-                self.add_modifier('SKILLS_'+key, mods[key][0], mods[key][1])
+                self.add_bonus('SKILLS_'+key, mods[key][0], mods[key][1])
 
-    def add_modifier(self,id,attr,adjustment):
+    def add_bonus(self,id,attr,adjustment):
         adj = {}
         adj['key'] = attr
         adj['value'] = adjustment
-        self.__modifiers[id] = adj
+        self.__bonuses[id] = adj
 
-    def get_modifiers(self): return self.__modifiers
+    def get_bonuses(self): return self.__bonuses
 
-    def remove_modifier(self,id):
-        if id in self.__modifiers.keys():
-            del self.__modifiers[id]
+    def remove_bonus(self,id):
+        if id in self.__bonuses.keys():
+            del self.__bonuses[id]
 
-    def get_modifier_value(self,attr):
-        val = 0
-        for k in self.__modifiers:
-            adj = self.__modifiers[k]
-            if (adj['key'] == attr):
-                val = val + adj['value']
-        return val
+    def get_bonus_value(self,attr):
+        matched = filter(lambda x: x['key'] == attr, self.__bonuses.values())
+        return sum(map(lambda x: x['value'], matched))
 

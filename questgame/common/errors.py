@@ -11,5 +11,5 @@
     
     """description of class"""
     def __init__(self, *args):
-        return super(QuestGameError, self).__init__(*args)
+        super(QuestGameError, self).__init__(*args)
 

@@ -1,4 +1,4 @@
-﻿from questgame.common.rules import ATTRIBUTES, GameRules, Effects
+﻿from questgame.common.rules import PlayerAttributes, GameRules, Effects
 from questgame.common.base_classes import BaseStats
 from questgame.game_items.items import Item
 from questgame.common.dice import Dice
@@ -38,7 +38,7 @@ class Weapon(Item):
     @property
     def is_throwable(self): return False
     @property
-    def throw_modifier_attribute(self): return ATTRIBUTES.STRENGTH
+    def throw_modifier_attribute(self): return PlayerAttributes.STRENGTH
 
     def _damage(self, attacker):
         dice = WeaponStats.get_damage_dice(self)
@@ -157,13 +157,13 @@ class MeleeWeapon(Weapon):
     @property
     def is_ranged(self): return False
     @property
-    def modifier_attributes(self): return [ATTRIBUTES.STRENGTH]
+    def modifier_attributes(self): return [PlayerAttributes.STRENGTH]
 
 class MeleeFinessWeapon(Weapon):
     @property
     def is_ranged(self): return False
     @property
-    def modifier_attributes(self): return [ATTRIBUTES.STRENGTH, ATTRIBUTES.DEXTERITY]
+    def modifier_attributes(self): return [PlayerAttributes.STRENGTH, PlayerAttributes.DEXTERITY]
 
 class RangedWeapon(Weapon):
     def __init__(self, count, ammo_class):
@@ -173,7 +173,7 @@ class RangedWeapon(Weapon):
     @property
     def is_ranged(self): return True
     @property
-    def modifier_attributes(self): return [ATTRIBUTES.DEXTERITY]
+    def modifier_attributes(self): return [PlayerAttributes.DEXTERITY]
     @property
     def ammo_class(self): return self.__ammo_class
     def ammo_count(self, player):
@@ -258,7 +258,7 @@ class ShortBow(Bow): pass
 
 
 class WeaponStats(BaseStats):
-    _AC_CLASS = BaseStats._AC_CLASS
+    _ARMOR_CLASS = BaseStats._ARMOR_CLASS
     _WEIGHT = BaseStats._WEIGHT
     _COST = BaseStats._COST
     _NAME = BaseStats._NAME
@@ -271,24 +271,24 @@ class WeaponStats(BaseStats):
     _ATTACK_TYPE = 4 #Your punch hits the rat. The rat's punch hits you.
 
     _STATS = {
-        Fists: { _ATTACK_TYPE:'punch', _NAME_MATCHES:['fists'], _AC_CLASS:0, _DAMAGE:[1,3], _WEIGHT:0, _COST:0, _CRITICAL_HIT: range(20,21) },
-        Claws: { _ATTACK_TYPE:'claws', _NAME_MATCHES:['claws'], _AC_CLASS:0, _DAMAGE:[1,3], _WEIGHT:0, _COST:0, _CRITICAL_HIT: range(20,21) },
-        Rock: { _ATTACK_TYPE:'rock', _NAME_MATCHES:['rock'], _AC_CLASS:0, _DAMAGE:[1,2], _WEIGHT:2, _COST:0, _CRITICAL_HIT: range(20,21) },
-        WoodArrow: { _ATTACK_TYPE:'arrow', _NAME_MATCHES:['wood arrow'], _AC_CLASS:0, _AMMO_DAMAGE:[0,0,0], _DAMAGE:[1,4], _WEIGHT:2, _COST:0.01, _CRITICAL_HIT: range(20,21), _ATTR_MODIFIERS: {'PENALTY':[ATTRIBUTES.ATTACK,-4]} },
-        IronArrow: { _ATTACK_TYPE:'arrow', _NAME_MATCHES:['iron arrow'], _AC_CLASS:0, _AMMO_DAMAGE:[0,0,1], _DAMAGE:[1,5], _WEIGHT:2, _COST:0.05, _CRITICAL_HIT: range(20,21), _ATTR_MODIFIERS: {'PENALTY':[ATTRIBUTES.ATTACK,-4]} },
-        SteelArrow: { _ATTACK_TYPE:'arrow', _NAME_MATCHES:['steel arrow'], _AC_CLASS:0, _AMMO_DAMAGE:[0,0,2], _DAMAGE:[1,6], _WEIGHT:2, _COST:0.1, _CRITICAL_HIT: range(20,21), _ATTR_MODIFIERS: {'PENALTY':[ATTRIBUTES.ATTACK,-4]} },
-        Dagger: { _ATTACK_TYPE:'dagger', _NAME_MATCHES:['dagger'], _AC_CLASS:0, _DAMAGE:[1,6], _WEIGHT:1, _COST:0.2, _CRITICAL_HIT: range(20,21) },
-        Staff: { _ATTACK_TYPE:'staff', _NAME_MATCHES:['staff'], _AC_CLASS:0, _DAMAGE:[1,6], _WEIGHT:1, _COST:0.2, _CRITICAL_HIT: range(20,21) },
-        ThiefsDagger: { _ATTACK_TYPE:'dagger', _NAME_MATCHES:['thiefs dagger'], _AC_CLASS:0, _DAMAGE:[1,6], _WEIGHT:1, _COST:0.2, _CRITICAL_HIT: range(20,21), _ATTR_MODIFIERS: {'BONUS':[ATTRIBUTES.DEXTERITY,2]}, _SKILL_MODIFIERS: {'BONUS':[skills.SneakAttack, 1]} },
-        ShortSword: { _ATTACK_TYPE:'sword', _NAME_MATCHES:['short sword'], _AC_CLASS:0, _DAMAGE:[1,8], _WEIGHT:2, _COST:5, _CRITICAL_HIT: range(19,21) },
-        LongSword: { _ATTACK_TYPE:'sword', _NAME_MATCHES:['long sword'], _AC_CLASS:0, _DAMAGE:[1,10], _WEIGHT:5, _COST:10, _CRITICAL_HIT: range(19,21) },
-        GreatSword: { _ATTACK_TYPE:'sword', _NAME_MATCHES:['great sword'], _AC_CLASS:0, _DAMAGE:[1,10], _WEIGHT:5, _COST:10, _CRITICAL_HIT: range(19,21) },
-        ShortBow: { _ATTACK_TYPE:'arrow', _NAME_MATCHES:['short bow'], _AC_CLASS:0, _DAMAGE:[1,10], _WEIGHT:5, _COST:10, _CRITICAL_HIT: range(19,21) },
-        LongBow: { _ATTACK_TYPE:'arrow', _NAME_MATCHES:['long bow'], _AC_CLASS:0, _DAMAGE:[1,10], _WEIGHT:5, _COST:10, _CRITICAL_HIT: range(19,21) },
-        Axe: { _ATTACK_TYPE:'axe', _NAME_MATCHES:['axe'], _AC_CLASS:0, _DAMAGE:[1,8], _WEIGHT:2, _COST:5, _CRITICAL_HIT: range(19,21) },
-        Spear: { _ATTACK_TYPE:'spear', _NAME_MATCHES:['spear'], _AC_CLASS:0, _DAMAGE:[1,8], _WEIGHT:2, _COST:5, _CRITICAL_HIT: range(19,21) },
-        Mace: { _ATTACK_TYPE:'mace', _NAME_MATCHES:['mace'], _AC_CLASS:0, _DAMAGE:[1,8], _WEIGHT:2, _COST:5, _CRITICAL_HIT: range(19,21) },
-        TwoHandedAxe: { _ATTACK_TYPE:'axe', _NAME_MATCHES:['two handed axe'], _AC_CLASS:0, _DAMAGE:[1,8], _WEIGHT:2, _COST:5, _CRITICAL_HIT: range(19,21) },
+        Fists: { _ATTACK_TYPE:'punch', _NAME_MATCHES:['fists'], _ARMOR_CLASS:0, _DAMAGE:[1,3], _WEIGHT:0, _COST:0, _CRITICAL_HIT: range(20,21) },
+        Claws: { _ATTACK_TYPE:'claws', _NAME_MATCHES:['claws'], _ARMOR_CLASS:0, _DAMAGE:[1,3], _WEIGHT:0, _COST:0, _CRITICAL_HIT: range(20,21) },
+        Rock: { _ATTACK_TYPE:'rock', _NAME_MATCHES:['rock'], _ARMOR_CLASS:0, _DAMAGE:[1,2], _WEIGHT:2, _COST:0, _CRITICAL_HIT: range(20,21) },
+        WoodArrow: { _ATTACK_TYPE:'arrow', _NAME_MATCHES:['wood arrow'], _ARMOR_CLASS:0, _AMMO_DAMAGE:[0,0,0], _DAMAGE:[1,4], _WEIGHT:2, _COST:0.01, _CRITICAL_HIT: range(20,21), _ATTR_MODIFIERS: {'PENALTY':[PlayerAttributes.ATTACK,-4]} },
+        IronArrow: { _ATTACK_TYPE:'arrow', _NAME_MATCHES:['iron arrow'], _ARMOR_CLASS:0, _AMMO_DAMAGE:[0,0,1], _DAMAGE:[1,5], _WEIGHT:2, _COST:0.05, _CRITICAL_HIT: range(20,21), _ATTR_MODIFIERS: {'PENALTY':[PlayerAttributes.ATTACK,-4]} },
+        SteelArrow: { _ATTACK_TYPE:'arrow', _NAME_MATCHES:['steel arrow'], _ARMOR_CLASS:0, _AMMO_DAMAGE:[0,0,2], _DAMAGE:[1,6], _WEIGHT:2, _COST:0.1, _CRITICAL_HIT: range(20,21), _ATTR_MODIFIERS: {'PENALTY':[PlayerAttributes.ATTACK,-4]} },
+        Dagger: { _ATTACK_TYPE:'dagger', _NAME_MATCHES:['dagger'], _ARMOR_CLASS:0, _DAMAGE:[1,6], _WEIGHT:1, _COST:0.2, _CRITICAL_HIT: range(20,21) },
+        Staff: { _ATTACK_TYPE:'staff', _NAME_MATCHES:['staff'], _ARMOR_CLASS:0, _DAMAGE:[1,6], _WEIGHT:1, _COST:0.2, _CRITICAL_HIT: range(20,21) },
+        ThiefsDagger: { _ATTACK_TYPE:'dagger', _NAME_MATCHES:['thiefs dagger'], _ARMOR_CLASS:0, _DAMAGE:[1,6], _WEIGHT:1, _COST:0.2, _CRITICAL_HIT: range(20,21), _ATTR_MODIFIERS: {'BONUS':[PlayerAttributes.DEXTERITY,2]}, _SKILL_MODIFIERS: {'BONUS':[skills.SneakAttack, 1]} },
+        ShortSword: { _ATTACK_TYPE:'sword', _NAME_MATCHES:['short sword'], _ARMOR_CLASS:0, _DAMAGE:[1,8], _WEIGHT:2, _COST:5, _CRITICAL_HIT: range(19,21) },
+        LongSword: { _ATTACK_TYPE:'sword', _NAME_MATCHES:['long sword'], _ARMOR_CLASS:0, _DAMAGE:[1,10], _WEIGHT:5, _COST:10, _CRITICAL_HIT: range(19,21) },
+        GreatSword: { _ATTACK_TYPE:'sword', _NAME_MATCHES:['great sword'], _ARMOR_CLASS:0, _DAMAGE:[1,10], _WEIGHT:5, _COST:10, _CRITICAL_HIT: range(19,21) },
+        ShortBow: { _ATTACK_TYPE:'arrow', _NAME_MATCHES:['short bow'], _ARMOR_CLASS:0, _DAMAGE:[1,10], _WEIGHT:5, _COST:10, _CRITICAL_HIT: range(19,21) },
+        LongBow: { _ATTACK_TYPE:'arrow', _NAME_MATCHES:['long bow'], _ARMOR_CLASS:0, _DAMAGE:[1,10], _WEIGHT:5, _COST:10, _CRITICAL_HIT: range(19,21) },
+        Axe: { _ATTACK_TYPE:'axe', _NAME_MATCHES:['axe'], _ARMOR_CLASS:0, _DAMAGE:[1,8], _WEIGHT:2, _COST:5, _CRITICAL_HIT: range(19,21) },
+        Spear: { _ATTACK_TYPE:'spear', _NAME_MATCHES:['spear'], _ARMOR_CLASS:0, _DAMAGE:[1,8], _WEIGHT:2, _COST:5, _CRITICAL_HIT: range(19,21) },
+        Mace: { _ATTACK_TYPE:'mace', _NAME_MATCHES:['mace'], _ARMOR_CLASS:0, _DAMAGE:[1,8], _WEIGHT:2, _COST:5, _CRITICAL_HIT: range(19,21) },
+        TwoHandedAxe: { _ATTACK_TYPE:'axe', _NAME_MATCHES:['two handed axe'], _ARMOR_CLASS:0, _DAMAGE:[1,8], _WEIGHT:2, _COST:5, _CRITICAL_HIT: range(19,21) },
         }
     @staticmethod
     def get_damage_dice(weapon): return WeaponStats._STATS[weapon.__class__][WeaponStats._DAMAGE]

@@ -14,7 +14,7 @@ class TestDice(unittest.TestCase):
         
         #Test every possible value has at least one entry
         for val in range(die, die*sides+1):
-           self.assertTrue(result.has_key(val), 'Possible dice result exists, failed to find %i' % val)
+           self.assertTrue(val in result.keys(), 'Possible dice result exists, failed to find %i' % val)
 
     def test_roll(self):
         rolls = 1000

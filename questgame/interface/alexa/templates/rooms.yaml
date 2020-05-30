@@ -40,8 +40,12 @@ door_open: |
     You open the door, and walk through it.
 close: |
     You close the {{item}}.
+close_with_spell: |
+    You close the {{item}} with the spell.
 open: |
     You open the {{item}}.
+open_with_spell: |
+    You open the {{item}} with the spell.
 already_closed: |
     The {{item}} is already closed.
 already_open: |

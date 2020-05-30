@@ -109,7 +109,7 @@ class Test_dynamodb(unittest.TestCase):
         # Wait until the table exists.
         table.meta.client.get_waiter('table_exists').wait(TableName='GameData')
 
-        # Print out some data about the table.
+        # print(out some data about the table.)
         self.assertEqual(table.item_count,0)
 
         #Test user existence

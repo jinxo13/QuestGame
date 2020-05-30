@@ -1,6 +1,6 @@
 ﻿import unittest
 from questgame.players.players import Thief
-from questgame.common.rules import GameRules, ATTRIBUTES
+from questgame.common.rules import GameRules, PlayerAttributes
 from questgame.common.dice import Dice
 from questgame.common.utils import Helpers
 from questgame.players import skills, character_classes
@@ -28,20 +28,20 @@ class test_stats(unittest.TestCase):
         player.strength_base = 9
         self.assertEqual(player.strength_base,9)
 
-        player.add_modifier('SPOTION',ATTRIBUTES.STRENGTH, 2)
+        player.add_bonus('SPOTION',PlayerAttributes.STRENGTH, 2)
         self.assertEqual(player.strength_base,9)
         self.assertEqual(player.strength,11)
 
-        player.add_modifier('SSPELL',ATTRIBUTES.STRENGTH, 3)
+        player.add_bonus('SSPELL',PlayerAttributes.STRENGTH, 3)
         self.assertEqual(player.strength,14)
 
-        player.add_modifier('SPOTION',ATTRIBUTES.STRENGTH, 4)
+        player.add_bonus('SPOTION',PlayerAttributes.STRENGTH, 4)
         self.assertEqual(player.strength,16)
 
-        player.remove_modifier('SSPELL')
+        player.remove_bonus('SSPELL')
         self.assertEqual(player.strength,13)
 
-        player.remove_modifier('XXX')
+        player.remove_bonus('XXX')
         self.assertEqual(player.strength,13)
 
         player.strength_base = 11
@@ -97,13 +97,13 @@ class test_stats(unittest.TestCase):
 
         for _i in range(100):
             dmg = player.get_equipped_weapon()._normal_strike(player) #1D6
-            print "Player Weapon Damage: {}".format(dmg)
+            print("Player Weapon Damage: {}".format(dmg))
             self.assertGreaterEqual(dmg, 4)
             self.assertLessEqual(dmg, 9)
         #Critical strike
         for _i in range(100):
             dmg = player.get_equipped_weapon()._critical_strike(player) #1D6 + 1D6 + 3*2
-            print "Player Weapon Damage: {}".format(dmg)
+            print("Player Weapon Damage: {}".format(dmg))
             self.assertGreaterEqual(dmg, 8)
             self.assertLessEqual(dmg, 18)
 
@@ -115,7 +115,7 @@ class test_stats(unittest.TestCase):
         self.assertEqual(player.level, 5) #3d6 damage
         for _i in range(100):
             dmg = skills.SneakAttack().damage(player)
-            print "Player Sneak Attack score: {}".format(dmg)
+            print("Player Sneak Attack score: {}".format(dmg))
             self.assertGreaterEqual(dmg, 3)
             self.assertLessEqual(dmg, 18)
 
@@ -123,7 +123,7 @@ class test_stats(unittest.TestCase):
         player.equip_weapon(weapons.ThiefsDagger())
         for _i in range(100):
             dmg = skills.SneakAttack().damage(player)
-            print "Player Sneak Attack score: {}".format(dmg)
+            print("Player Sneak Attack score: {}".format(dmg))
             self.assertGreaterEqual(dmg, 4)
             self.assertLessEqual(dmg, 19)
 
@@ -132,39 +132,39 @@ class test_stats(unittest.TestCase):
         player = Thief() #+2 attack bonus at level 1
         player.strength_base = 17 #+3 strength modifier
         player.equip_weapon(weapons.Dagger()) #+2 proficiency
-        for i in range(100):
+        for _i in range(100):
             dice_roll = GameRules.roll_weapon_attack_score(player)
-            critical_strike = player.get_equipped_weapon().is_critical_strike(dice_roll.roll)
-            print "Player Attack score: {}".format(dice_roll.total)
+            #critical_strike = player.get_equipped_weapon().is_critical_strike(dice_roll.roll)
+            print("Player Attack score: {}".format(dice_roll.total))
             if not player.get_equipped_weapon().is_critical_miss(dice_roll.roll):
                 self.assertGreaterEqual(dice_roll.total, 7)
             self.assertLessEqual(dice_roll.total, 27)
 
-        player.add_modifier('POTION',ATTRIBUTES.STRENGTH, 4) #21 strength, +5 strength modifer
-        for i in range(100):
+        player.add_bonus('POTION',PlayerAttributes.STRENGTH, 4) #21 strength, +5 strength modifer
+        for _i in range(100):
             dice_roll = GameRules.roll_weapon_attack_score(player)
-            critical_strike = player.get_equipped_weapon().is_critical_strike(dice_roll.roll)
-            print "Player Attack score: {}".format(dice_roll.total)
+            #critical_strike = player.get_equipped_weapon().is_critical_strike(dice_roll.roll)
+            print("Player Attack score: {}".format(dice_roll.total))
             if not player.get_equipped_weapon().is_critical_miss(dice_roll.roll):
                 self.assertGreaterEqual(dice_roll.total, 9)
             self.assertLessEqual(dice_roll.total, 29)
 
-        player.remove_modifier('POTION')
+        player.remove_bonus('POTION')
         player.equip_weapon(weapons.LongBow()) #0 proficiency
         player.dexterity_base = 0 #-5 dexterity modifier, +2 attack bonus
-        for i in range(100):
+        for _i in range(100):
             dice_roll = GameRules.roll_weapon_attack_score(player)
-            critical_strike = player.get_equipped_weapon().is_critical_strike(dice_roll.roll)
-            print "Player Attack score: {}".format(dice_roll.total)
+            #critical_strike = player.get_equipped_weapon().is_critical_strike(dice_roll.roll)
+            print("Player Attack score: {}".format(dice_roll.total))
             if not player.get_equipped_weapon().is_critical_miss(dice_roll.roll):
                 self.assertGreaterEqual(dice_roll.total, -2)
             self.assertLessEqual(dice_roll.total, 17)
         
         player.dexterity_base = 12 #+1 dexterity modifier
-        for i in range(100):
+        for _i in range(100):
             dice_roll = GameRules.roll_weapon_attack_score(player)
-            critical_strike = player.get_equipped_weapon().is_critical_strike(dice_roll.total)
-            print "Player Attack score: {}".format(dice_roll.total)
+            #critical_strike = player.get_equipped_weapon().is_critical_strike(dice_roll.total)
+            print("Player Attack score: {}".format(dice_roll.total))
             if not player.get_equipped_weapon().is_critical_miss(dice_roll.roll):
                 self.assertGreaterEqual(dice_roll.total, 4)
             self.assertLessEqual(dice_roll.total, 23)

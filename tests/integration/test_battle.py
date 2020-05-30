@@ -46,27 +46,27 @@ class test_battle(unittest.TestCase):
 
         player_def = player.get_defense()
         goblin_def = goblin.get_defense()
-        print "Player Hit Points: {}".format(player.hit_points)
-        print "Player def: {}".format(player_def)
-        print "Player ability modifier: {}".format(player.determine_ability_modifier())
-        print "Player proficiency modifier: {}".format(player.determine_proficiency_bonus())
-        print "---"
-        print "Goblin Hit Points: {}".format(goblin.hit_points)
-        print "Goblin def: {}".format(goblin_def)
-        print "Goblin ability modifier: {}".format(goblin.determine_ability_modifier())
-        print "Goblin proficiency modifier: {}".format(goblin.determine_proficiency_bonus())
-        print "---"
+        print("Player Hit Points: {}".format(player.hit_points))
+        print("Player def: {}".format(player_def))
+        print("Player ability modifier: {}".format(player.determine_ability_modifier()))
+        print("Player proficiency modifier: {}".format(player.determine_proficiency_bonus()))
+        print("---")
+        print("Goblin Hit Points: {}".format(goblin.hit_points))
+        print("Goblin def: {}".format(goblin_def))
+        print("Goblin ability modifier: {}".format(goblin.determine_ability_modifier()))
+        print("Goblin proficiency modifier: {}".format(goblin.determine_proficiency_bonus()))
+        print("---")
         dice_roll = GameRules.roll_initiative_check(goblin)
         gob_init_check = dice_roll.total
         dice_roll = GameRules.roll_initiative_check(player)
         player_init_check = dice_roll.total
-        print "Goblin Initiative: {} ({})".format(gob_init_check,goblin.initiative_modifier)
-        print "Player Initiative: {} ({})".format(player_init_check,player.initiative_modifier)
+        print("Goblin Initiative: {} ({})".format(gob_init_check,goblin.initiative_bonus))
+        print("Player Initiative: {} ({})".format(player_init_check,player.initiative_bonus))
         if gob_init_check > player_init_check:
-            print "Goblin was quicker to react, and starts first"
+            print("Goblin was quicker to react, and starts first")
         else:
-            print "Player was quicker to react, and starts first"
-        print "---"
+            print("Player was quicker to react, and starts first")
+        print("---")
 
         #Attacks
         a = base_classes.Observer(goblin)

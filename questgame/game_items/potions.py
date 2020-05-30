@@ -1,5 +1,5 @@
-﻿from questgame.common.base_classes import Modifiers, BaseStats
-from questgame.common.rules import ATTRIBUTES, Effects
+﻿from questgame.common.base_classes import BaseStats
+from questgame.common.rules import PlayerAttributes, Effects
 from questgame.game_items.items import Drink
 from questgame.common.dice import Dice
 from questgame.interface.alexa.utils import ReplyHelpers
@@ -15,12 +15,12 @@ class Potion(Drink):
         super(Potion,self).__init__(count=count, stats=PotionStats)
     
     def _effect(self, action, player):
-        mods = self.get_modifiers()
+        mods = self.get_bonuses()
         for id in mods:
             mod = mods[id]
-            player.add_modifier(id, mod['key'], mod['value'])
+            player.add_bonus(id, mod['key'], mod['value'])
             if mod['value'] > 0:
-                player.notify_observers_log("{} {} improved by {}".format(player.class_name, ATTRIBUTES.get_name(mod['key']), mod['value']))
+                player.notify_observers_log("{} {} improved by {}".format(player.class_name, PlayerAttributes.get_name(mod['key']), mod['value']))
 
 class DamagePotion(Potion):
     
@@ -70,7 +70,7 @@ class ManaPotion(Potion):
         player.add_mana(self._mana())
 
 class PotionStats(BaseStats):
-    _AC_CLASS = BaseStats._AC_CLASS
+    _ARMOR_CLASS = BaseStats._ARMOR_CLASS
     _WEIGHT = BaseStats._WEIGHT
     _COST = BaseStats._COST
     _NAME = BaseStats._NAME
@@ -81,11 +81,11 @@ class PotionStats(BaseStats):
     _MANA = 2
 
     _STATS = {
-        StrengthPotion: { _NAME_MATCHES:['strength potion'], _AC_CLASS:0, _WEIGHT: 0.5, _COST: 5, _ATTR_MODIFIERS: {'BONUS':[ATTRIBUTES.STRENGTH,2]} },
-        HealingPotion: { _NAME_MATCHES:['healing potion','heal potion'], _AC_CLASS:0, _WEIGHT: 0.5, _COST: 5, _DAMAGE: [2,4,2] }, #2d4+2
-        ManaPotion: { _NAME_MATCHES:['mana potion'], _AC_CLASS:0, _WEIGHT: 0.5, _COST: 5, _MANA: [2,4,2] }, #2d4+2
-        HarmPotion: { _NAME_MATCHES:['harm potion'], _AC_CLASS:0, _WEIGHT: 0.5, _COST: 5, _DAMAGE: [2,4,2] }, #2d4+2
-        PowerfulHealingPotion: { _NAME_MATCHES:['large heal potion','large healing potion'], _AC_CLASS:0, _WEIGHT: 0.5, _COST: 20, _DAMAGE: [4,4,4] }, #4d4+4
+        StrengthPotion: { _NAME_MATCHES:['strength potion'], _ARMOR_CLASS:0, _WEIGHT: 0.5, _COST: 5, _ATTR_MODIFIERS: {'BONUS':[PlayerAttributes.STRENGTH,2]} },
+        HealingPotion: { _NAME_MATCHES:['healing potion','heal potion'], _ARMOR_CLASS:0, _WEIGHT: 0.5, _COST: 5, _DAMAGE: [2,4,2] }, #2d4+2
+        ManaPotion: { _NAME_MATCHES:['mana potion'], _ARMOR_CLASS:0, _WEIGHT: 0.5, _COST: 5, _MANA: [2,4,2] }, #2d4+2
+        HarmPotion: { _NAME_MATCHES:['harm potion'], _ARMOR_CLASS:0, _WEIGHT: 0.5, _COST: 5, _DAMAGE: [2,4,2] }, #2d4+2
+        PowerfulHealingPotion: { _NAME_MATCHES:['large heal potion','large healing potion'], _ARMOR_CLASS:0, _WEIGHT: 0.5, _COST: 20, _DAMAGE: [4,4,4] }, #4d4+4
         }
     @staticmethod
     def get_damage_dice(potion): return PotionStats._STATS[potion.__class__][PotionStats._DAMAGE]

@@ -12,7 +12,7 @@ class Helpers(object):
 
     @staticmethod
     def is_string(s):
-        return isinstance(s, basestring)
+        return isinstance(s, str)
 
     @staticmethod
     def class_for_name(module_name, class_name):
@@ -22,13 +22,6 @@ class Helpers(object):
         # get the class, will raise AttributeError if class cannot be found
         c = getattr(m, class_name)
         return c
-
-    @staticmethod
-    def apply_on_all(seq, method, *args, **kwargs):
-        result = []
-        for obj in seq:
-            result.append(getattr(obj, method)(*args, **kwargs))
-        return result
 
     @staticmethod
     def get_dict_value(dict, key, default):

@@ -32,8 +32,12 @@ class Test_save_create_state(unittest.TestCase):
         player.learn_spell(spell)
         state = player.get_state()
 
-        player.equip_weapon(weapons.Axe())
-        player.equip_armor(armor.LightArmor())
+        axe = weapons.Axe()
+        player.pickup(axe)
+        player.equip_weapon(axe)
+        lightArmor = armor.LightArmor()
+        player.pickup(lightArmor)
+        player.equip_armor(lightArmor)
 
         player.add_experience(300)
         self.assertEqual(player.level, 2)
@@ -49,7 +53,9 @@ class Test_save_create_state(unittest.TestCase):
         player = players.Mage()
         room = CellRoom(player)
         state = room.get_state()
-        room2 = room.create_from_state(state, player)
+        room_copy = room.create_from_state(state)
+
+        self.assertEqual(room.__class__, room_copy.__class__)
 
 if __name__ == '__main__':
     unittest.main()

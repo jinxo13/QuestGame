@@ -112,7 +112,7 @@ class db(object):
             )
             #table.meta.client.get_waiter('table_not_exists').wait(TableName='GameData')
             print(json.dumps(response, indent=4, cls=DecimalEncoder))
-        except Exception, e:
+        except Exception:
             if '.' in name: raise AttributeError()
             response = table.put_item(
                Item={

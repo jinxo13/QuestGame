@@ -3,8 +3,8 @@ from questgame.game_items import items, standard_items, weapons, armor, potions,
 from questgame.common.base_classes import Observable, Observer
 import json
 from questgame.common.utils import Helpers
-from questgame.common.base_classes import BaseStats
-from questgame.common.rules import GameRules
+from questgame.common.base_classes import BaseStats, Serializable
+from questgame.common.rules import GameRules, Difficulty
 from questgame.players import players
 from questgame.players.players import Actions
 
@@ -17,20 +17,13 @@ class Direction:
     SOUTH = 3
     WEST = 4
 
-class RoomItem(Observable):
+class RoomItem(Observable, Serializable):
     @property
     def description(self):
         try:
             return RoomStats.get_matches(self.room, self.name)[0]
         except:
             return self.name
-    def get_state(self):
-        result = {}
-        result['class'] = self.__class__.__name__
-        result['module'] = self.__module__
-        result['state'] = json.dumps(self.__state)
-        result['name'] = self.__name
-        return result
 
     def throw_strike(self, weapon, attacker):
         #Hit by thrown object
@@ -42,12 +35,22 @@ class RoomItem(Observable):
         #TODO: Determine if hit then action
         return True
 
+    '''
+    def get_state(self):
+        result = {}
+        result['class'] = self.__class__.__name__
+        result['module'] = self.__module__
+        result['state'] = json.dumps(self.__state)
+        result['name'] = self.__name
+        return result
+
     @staticmethod
     def create_from_state(room, state):
         cls = Helpers.class_for_name(state['module'],state['class'])
         inst = cls(room, state['name'])
         inst.__state = json.loads(state['state'])
         return inst
+    '''
 
     @property
     def name(self): return self.__name
@@ -74,26 +77,10 @@ class RoomItem(Observable):
 class SearchableItem(RoomItem):
     @property
     def is_empty(self): return len(self.__items) == 0
+
     def __init__(self, room, name, items=[], is_hidden=False):
         RoomItem.__init__(self, room, name, is_hidden)
-        self.__items = []
-        for itm in items:
-            self.__items.append(itm)
-
-    def get_state(self):
-        result = RoomItem.get_state(self)
-        result['items'] = []
-        for item in self.__items:
-            result['items'].append(item.get_state())
-        return result
-
-    @staticmethod
-    def create_from_state(room, state):
-        inst = RoomItem.create_from_state(room, state)
-        inst.__items = []
-        for item_state in state['items']:
-            inst.__items.append(items.Item.create_from_state(item_state))
-        return inst
+        self.__items = [itm for itm in items]
 
     def search(self):
         result = self.__items
@@ -112,38 +99,18 @@ class SearchableItem(RoomItem):
 
 class RoomOpenableItem(RoomItem, standard_items.OpenableItem):
     
-    def __init__(self, room, name, is_open = False, key_id=None, lock_resistance=10, spell_resistance=10, is_hidden=False):
+    def __init__(self, room, name, is_open = False, key_id=None, lock_resistance=Difficulty.Easy, spell_resistance=Difficulty.Easy, is_hidden=False):
         standard_items.OpenableItem.__init__(self, key_id=key_id, is_open=is_open, spell_resistance=spell_resistance, lock_resistance=lock_resistance)
         RoomItem.__init__(self, room, name, is_hidden)
     
-    def get_state(self):
-        self._set_state('is_open',self._is_open)
-        self._set_state('has_been_opened',self._has_been_opened)
-        self._set_state('is_locked',self._is_locked)
-        self._set_state('key_id',self._key_id)
-        self._set_state('spell_resistance',self._spell_resistance)
-        self._set_state('lock_resistance',self._lock_resistance)
-        return RoomItem.get_state(self)
-
-    @staticmethod
-    def create_from_state(room, state):
-        inst = RoomItem.create_from_state(room, state)
-        inst._key_id = inst._get_state('key_id')
-        inst._is_locked = inst._get_state('is_locked')
-        inst._spell_resistance = inst._get_state('spell_resistance')
-        inst._lock_resistance = inst._get_state('lock_resistance')
-        inst._is_open = inst._get_state('is_open')
-        inst._has_been_opened = inst._get_state('has_been_opened')
-        return inst
-
 class Chest(RoomOpenableItem, SearchableItem):
     """Yip it's a chest...."""
-    def __init__(self, room, name='chest', items=[], key_id=None, is_hidden=False, spell_resistance=10, lock_resistance=10):
+    def __init__(self, room, name='chest', items=[], key_id=None, is_hidden=False, spell_resistance=Difficulty.Easy, lock_resistance=Difficulty.Easy):
         SearchableItem.__init__(self, room=room, name=name, items=items, is_hidden=is_hidden)
         RoomOpenableItem.__init__(self, room=room, name=name, key_id=key_id, spell_resistance=spell_resistance, lock_resistance=lock_resistance, is_open=False)
 
 class Door(RoomOpenableItem):
-    def __init__(self, room, name, is_open = False, key_id = None, lock_resistance = 10, spell_resistance = 10, is_hidden = False):
+    def __init__(self, room, name, is_open = False, key_id = None, lock_resistance = Difficulty.Easy, spell_resistance = Difficulty.Easy, is_hidden = False):
         super(Door, self).__init__(room, name, is_open, key_id, lock_resistance, spell_resistance, is_hidden)
 
     def open(self, player):
@@ -154,7 +121,7 @@ class Door(RoomOpenableItem):
 
     def on_open(self, player):
         self.room.exit(self) 
-        self.close(player, reply=False)
+        self.close(player)
 
 class Floor(RoomItem):
     def __init__(self, room):
@@ -163,61 +130,55 @@ class Walls(RoomItem):
     def __init__(self, room):
         super(Walls, self).__init__(room, 'walls', save_state=False)
 
-class Room(Observable):
+class Room(Observable, Serializable):
     """Describes a place/room"""
     @property
     def name(self): return self.__class__.__name__
-    @property
-    def player(self): return self.__player
     @property
     def is_floor_searched(self): return self._get_state('floor_searched') == True
     @property
     def is_room_searched(self): return self._get_state('room_searched') == True
 
+    '''
     def get_state(self):
         result = {}
         result['class'] = self.__class__.__name__
         result['module'] = self.__module__
-        result['items'] = []
-        result['floor_items'] = []
-        result['monsters'] = []
         result['state'] = json.dumps(self.__state)
-        for item in self._room_items:
-            if item.save_state:
-                result['items'].append(item.get_state())
-        for item in self._floor_items: 
-            result['floor_items'].append(item.get_state())
-        for item in self._monsters:
-            result['monsters'].append(item.get_state())
+        result['items'] = [item.get_state() for item in self._room_items if item.save_state]
+        result['floor_items'] = [item.get_state() for item in self._floor_items]
+        result['monsters'] = [item.get_state() for item in self._monsters]
         return result
 
     @staticmethod
     def create_from_state(state, player):
         cls = Helpers.class_for_name(state['module'],state['class'])
         inst = cls(player,load_from_state=True)
-        for item_state in state['items']:
-            cls = Helpers.class_for_name(item_state['module'],item_state['class'])
-            inst._room_items.append(cls.create_from_state(inst, item_state))
-        for item_state in state['floor_items']:
-            cls = Helpers.class_for_name(item_state['module'],item_state['class'])
-            inst._floor_items.append(cls.create_from_state(item_state))
-        for item_state in state['monsters']:
-            inst._monsters.append(players.Player.create_from_state(item_state))
+        inst._room_items = [
+            Helpers.class_for_name(item_state['module'],item_state['class']).create_from_state(inst, item_state) for item_state in state['items']
+        ]
+        inst._floor_items = [
+            Helpers.class_for_name(item_state['module'],item_state['class']).create_from_state(item_state) for item_state in state['floor_items']
+        ]
+        inst._monsters = [
+            players.Player.create_from_state(item_state) for item_state in state['monsters']
+        ]
         inst.__state = json.loads(state['state'])
         return inst
-
+    '''
+    
     def get_to_room(self, door):
         return RoomStats.get_to_room_by_door(self, door)
 
-    def exit(self, door):
-        new_room_cls = self.get_to_room(door)
+    def exit(self, door, player):
         from alexa_control import game_manager
+        new_room_cls = self.get_to_room(door)
         user = game_manager.get_user(self.user_id)
         room_state = user.load_room(new_room_cls.__name__)
         if room_state:
-            new_room = Room.create_from_state(room_state, self.player)
+            new_room = Room.create_from_state(room_state)
         else:
-            new_room = new_room_cls(self.player)
+            new_room = new_room_cls()
         user.save_room()
         user.set_room(new_room)
         door.notify_observers_reply(new_room.enter().prompt_text)
@@ -269,20 +230,20 @@ class Room(Observable):
     def on_search_room(self): pass
     def on_search_item(self, item, found_items): pass
 
-    def __search_floor(self):
+    def __search_floor(self, player):
         #item = self.get_room_item_by_name('floor')
         self.on_search_floor()
         floor_text = self.__get_room_text()[1]
         result = ReplyHelpers.render_room_template('search_item',item=floor_text)
-        result += ' ' + self.__list_items_reply(self._floor_items, pickup=True, player=self.player)
+        result += ' ' + self.__list_items_reply(self._floor_items, pickup=True, player=player)
             
         mon_results = self.__check_for_bodies()
         self._set_state('floor_searched', True)
         return result + ' ' + mon_results
 
-    def search(self, item=None, item_text=None):
+    def search(self, player, item=None, item_text=None):
         #Search floor
-        if isinstance(item, Floor): return self.__search_floor()
+        if isinstance(item, Floor): return self.__search_floor(player)
         
         #Search room or walls
         if (item_text is None or item_text in ['room','area']) or isinstance(item, Walls):
@@ -299,7 +260,7 @@ class Room(Observable):
             monster = item
             if monster.is_looted:
                 return ReplyHelpers.render_action_template('monster_looted',monster_name=monster.class_name)
-            found_items = self.player.loot_body(monster)
+            found_items = player.loot_body(monster)
             result = ReplyHelpers.render_room_template('search_item',item=monster.class_name)
             result += ' ' + self.__list_items_reply(found_items, pickup=False)
 
@@ -307,7 +268,7 @@ class Room(Observable):
         elif isinstance(item, SearchableItem):
             found_items = item.search()
             result = ReplyHelpers.render_room_template('search_item',item=item.description)
-            result += ' ' + self.__list_items_reply(found_items, pickup=True, player=self.player)
+            result += ' ' + self.__list_items_reply(found_items, pickup=True, player=player)
         else:
             return ReplyHelpers.render_room_template('item_not_searchable')
 
@@ -324,9 +285,9 @@ class Room(Observable):
             mon_results = ReplyHelpers.render_room_template('dead_body', floor_text=floor_text, monster_names=monster_names)
         return mon_results
 
-    def enter(self):
-        self.player._end_battle()
-        monster_result = self.__check_for_monster()
+    def enter(self, player):
+        player._end_battle()
+        monster_result = self.__check_for_monster(player)
         body_result = self.__check_for_bodies()
         if monster_result != '':
             reply_text = ReplyHelpers.render_room_template('{}_enter'.format(self.name.lower())) + ' ' + monster_result
@@ -406,9 +367,9 @@ class Room(Observable):
     def _set_state(self, key, value): self.__state[key] = value
     def _get_state(self, key): return self.__state[key]
 
-    def what_can_user_do(self):
+    def what_can_user_do(self, player):
 
-        if self.player.is_in_battle:
+        if player.is_in_battle:
             return ReplyHelpers.render_common_template('what')
 
         result = ''
@@ -480,84 +441,84 @@ class Room(Observable):
             return ReplyHelpers.render_descr_template('descr_{}'.format(monster.class_name.lower()), hit_points=monster.hit_points)
         return ReplyHelpers.render_descr_template('descr_{}'.format(item.name.lower()))
 
-    def eat(self, item):
+    def eat(self, player, item):
         if not isinstance(item, items.Food):
             return ReplyHelpers.render_action_template('eat_cannot', item_text=item.description)
-        with Observer(self.player) as ob:
-            self.player.eat(item)
+        with Observer(player) as ob:
+            player.eat(item)
             return self.__build_reply(ob)
 
-    def drink(self, item):
-        with Observer(self.player) as ob:
-            self.player.drink(item)
+    def drink(self, player, item):
+        with Observer(player) as ob:
+            player.drink(item)
             return self.__build_reply(ob)
 
-    def unlock(self, item):
+    def unlock(self, player, item):
         with Observer(item) as ob:
             key = item.get_key()
-            if self.__player.is_carrying(key):
-                item.unlock_with_key(self.__player)
+            if player.is_carrying(key):
+                item.unlock(player, key=key)
             elif self.__player.can_picklock():
-                item.unlock_with_pick(self.__player)
-            elif self.__player.can_cast_spell(spells.UnlockSpell()):
-                item.unlock_with_spell(spells.UnlockSpell(), self.__player)
+                item.unlock(player)
+            elif player.can_cast_spell(spells.UnlockSpell()): #TODO fix
+                item.unlock(player, spell=spells.UnlockSpell())
             else:
                 return ReplyHelpers.render_room_template('nothing_to_unlock_item', item=item.description)
             return self.__build_reply(ob)
 
-    def lock(self, item):
+    def lock(self, player, item):
         with Observer(item) as ob:
             key = item.get_key()
-            if self.__player.is_carrying(key):
-                item.lock_with_key(self.__player)
-            elif self.__player.can_cast_spell(spells.LockSpell()):
-                item.lock_with_spell(spells.LockSpell(), self.__player)
+            if player.is_carrying(key):
+                item.lock_with_key(player)
+            elif player.can_cast_spell(spells.LockSpell()):
+                item.lock_with_spell(spells.LockSpell(), player)
             else:
                 return ReplyHelpers.render_room_template('nothing_to_lock_item', item=item.description)
             return self.__build_reply(ob)
 
-    def strike(self, target):
-        with Observer(self.player) as ob:
-            self.player.strike(target)
+    def strike(self, player, target):
+        with Observer(player) as ob:
+            player.strike(target)
             #TODO: This doesn't look right
             if not target.is_dead:
-                target.strike(self.player)
+                target.strike(player)
             return self.__build_reply(ob)
 
-    def shoot(self, target):
-        with Observer(self.player) as ob:
-            self.player.shoot(target)
+    def shoot(self, player, target):
+        with Observer(player) as ob:
+            player.shoot(target)
             #TODO: This doesn't look right
             if not target.is_dead:
-                target.strike(self.player)
+                target.strike(player)
             return self.__build_reply(ob)
 
-    def cast(self, spell_text, target):
+    def cast(self, player, spell_text, target):
         spell = spells.SpellStats.get_spell_by_text(spell_text)
         if not spell:
             return ReplyHelpers.render_action_template('spell_cannot')
 
-        with Observer(self.player) as ob:
-            if not self.player.can_cast_spell(spell):
+        with Observer(player) as ob:
+            if not player.can_cast_spell(spell):
                 return ReplyHelpers.render_action_template('spell_cannot_cast',spell_name=spell.description) + self.__build_reply(ob)
         
             result = ''
-            self.player.cast(spell, target)
+            player.cast(spell, target)
         
             #You attacked a poor monster
             if isinstance(target, players.Monster):
-                target.strike(self.player)
+                target.strike(player)
             result += ' ' + self.__build_reply(ob)
             return result
 
     def where(self):
         return ReplyHelpers.render_room_template('{}_enter'.format(self.name.lower()))
 
-    def throw(self, item, target_text):
+    def throw(self, player, item, target_text):
         
-        with Observer(self.player) as ob:
-            if not self.player.is_carrying(item):
-                self.player.notify_observers_reply('not_carrying', template=ReplyHelpers.TEMPLATE_ACTION, action=Actions.get_action_text(Actions.THROW), item_prefix=item.text_prefix, item_text=item.description)
+        with Observer(player) as ob:
+            if not player.is_carrying(item):
+                player.notify_observers_reply('not_carrying', template=ReplyHelpers.TEMPLATE_ACTION, action=Actions.get_action_text(Actions.THROW), item_prefix=item.text_prefix, item_text=item.description)
                 return self.__build_reply(ob)
 
         target = None
@@ -581,13 +542,13 @@ class Room(Observable):
         is_item = isinstance(target, items.Item) or isinstance(target, RoomItem)
 
         floor_text = self.__get_room_text()[1]
-        with Observer(self.player) as ob:
-            is_hit = self.player.throw(item, target)
+        with Observer(player) as ob:
+            is_hit = player.throw(item, target)
 
             if is_hit and is_item:
-                self.player.notify_observers_reply('throw_item_hit', template=ReplyHelpers.TEMPLATE_ACTION, item_text=item.description, target_text=target.description, floor_text=floor_text)
+                player.notify_observers_reply('throw_item_hit', template=ReplyHelpers.TEMPLATE_ACTION, item_text=item.description, target_text=target.description, floor_text=floor_text)
             elif is_item:
-                self.player.notify_observers_reply('throw_item_miss', template=ReplyHelpers.TEMPLATE_ACTION, item_text=item.description, target_text=target.description, floor_text=floor_text)
+                player.notify_observers_reply('throw_item_miss', template=ReplyHelpers.TEMPLATE_ACTION, item_text=item.description, target_text=target.description, floor_text=floor_text)
 
             if is_hit and is_monster and is_weapon:
                 #Hit and lodged in monster
@@ -602,14 +563,14 @@ class Room(Observable):
                     self.add_floor_item(item.one_of())
 
             if is_monster and is_weapon and not target.is_dead:
-                target.strike(self.player)
+                target.strike(player)
 
             return self.__build_reply(ob)
 
-    def count_money(self):
-        carried_gold = self.__player.inventory.get_item(items.Gold())
-        carried_silver = self.__player.inventory.get_item(items.Silver())
-        carried_copper = self.__player.inventory.get_item(items.Copper())
+    def count_money(self, player):
+        carried_gold = player.inventory.get_item(items.Gold())
+        carried_silver = player.inventory.get_item(items.Silver())
+        carried_copper = player.inventory.get_item(items.Copper())
         if carried_gold + carried_silver + carried_copper > 0:
             result = ReplyHelpers.render_action_template('money_have')
         else:
@@ -663,24 +624,16 @@ class Room(Observable):
         return i, monster_names
 
     def get_dead_monsters(self, not_looted=False):
-        result = []
-        for m in self._monsters:
-            if m.is_dead: result.append(m)
-        return result
+        return [m for m in self._monsters if m.is_dead]
 
     def get_alive_monsters(self):
-        result = []
-        for m in self._monsters:
-            if not m.is_dead: result.append(m)
-        return result
+        return [m for m in self._monsters if not m.is_dead]
 
     def get_monsters(self):
-        result = []
-        result.extend(self._monsters)
-        return result
+        return [m for m in self._monsters]
 
     def __is_openable_action(self, action, spell_text):
-        openable_spells = Helpers.apply_on_all([spells.OpenSpell(), spells.CloseSpell(), spells.LockSpell(), spells.UnlockSpell()],'is_match',text=spell_text)
+        openable_spells = filter(lambda x: x.is_match(spell_text), [spells.OpenSpell(), spells.CloseSpell(), spells.LockSpell(), spells.UnlockSpell()])
         return action in Actions.OPENABLE_ACTIONS or (action == Actions.CAST and True in openable_spells)
 
     def __is_unlock_action(self, action, spell_text):
@@ -694,9 +647,9 @@ class Room(Observable):
     def __is_lock_action(self, action, spell_text):
         return action == Actions.LOCK or (action == Actions.CAST and spells.LockSpell().is_match(spell_text))
 
-    def do_action(self, action, item_text, spell_text=None, target_text=None, amount=0):
+    def do_action(self, player, action, item_text, spell_text=None, target_text=None, amount=0):
         
-        if self.player.is_in_battle and action not in Actions.ALLOWED_BATTLE_ACTIONS:
+        if player.is_in_battle and action not in Actions.ALLOWED_BATTLE_ACTIONS:
             reply_text = ReplyHelpers.render_action_template('battle_invalid_action', monster=self.get_next_monster().description)
             return QuestGameNormalReply(self, reply_text)
 
@@ -706,7 +659,7 @@ class Room(Observable):
                
             if not item_text is None:
 
-                if self.player.is_in_battle and action in Actions.ATTACK_ACTIONS:
+                if player.is_in_battle and action in Actions.ATTACK_ACTIONS:
                     #Look for matching monster
                     for m in self.get_monsters():
                         if m.is_match(item_text):
@@ -720,7 +673,7 @@ class Room(Observable):
                     #Could be in room or on player
                     item = self.get_room_item_by_text(item_text)
                     if item is None:
-                        item = self.player.get_item_by_name(item_text)
+                        item = player.get_item_by_name(item_text)
                     if item is None:
                         #Look for matching monster
                         for m in self.get_monsters():
@@ -734,7 +687,7 @@ class Room(Observable):
 
                 elif action in Actions.PLAYER_ITEM_ACTIONS:
                     #Try items held by  player
-                    item = self.player.get_item_by_name(item_text)
+                    item = player.get_item_by_name(item_text)
                     if item is None:
                         reply_text = ReplyHelpers.render_action_template('not_carrying_unknown', action=Actions.get_action_text(action))
                         return QuestGameNormalReply(self, reply_text)
@@ -748,7 +701,7 @@ class Room(Observable):
                         return QuestGameNormalReply(self, reply_text)
 
             if item is None:
-                if self.player.is_in_battle and action in Actions.ATTACK_ACTIONS:
+                if player.is_in_battle and action in Actions.ATTACK_ACTIONS:
                     item = self.get_next_monster()
                     if item is None:
                         reply_text = ReplyHelpers.render_action_template('no_monster_to_battle')
@@ -787,48 +740,48 @@ class Room(Observable):
         if action == Actions.PULL: result_text = self.pull(item)
         elif action == Actions.PUSH: result_text = self.push(item)
         elif action == Actions.SEARCH: result_text = self.search(item, item_text)
-        elif action == Actions.CAST: result_text = self.cast(spell_text, item)
-        elif action == Actions.THROW: result_text = self.throw(item, target_text)
+        elif action == Actions.CAST: result_text = self.cast(player, spell_text, item)
+        elif action == Actions.THROW: result_text = self.throw(player, item, target_text)
         elif action == Actions.CLOSE: result_text = self.close(item)
         elif action == Actions.OPEN: result_text = self.open(item)
-        elif action == Actions.LOCK: result_text = self.lock(item)
-        elif action == Actions.UNLOCK: result_text = self.unlock(item)
+        elif action == Actions.LOCK: result_text = self.lock(player, item)
+        elif action == Actions.UNLOCK: result_text = self.unlock(player, item)
         elif action == Actions.DESCRIBE: result_text = self.describe(item)
         elif action == Actions.NO: result_text = self.reply_no()
         elif action == Actions.YES: result_text = self.reply_yes()
         elif action == Actions.PICK_LOCK: result_text = self.pick_lock(item)
-        elif action == Actions.SHOOT: result_text = self.shoot(item)
-        elif action == Actions.STRIKE: result_text = self.strike(item)
-        elif action == Actions.WHAT: result_text = self.what_can_user_do()
+        elif action == Actions.SHOOT: result_text = self.shoot(player, item)
+        elif action == Actions.STRIKE: result_text = self.strike(player, item)
+        elif action == Actions.WHAT: result_text = self.what_can_user_do(player)
         elif action == Actions.PICKUP: result_text = self.pickup(item)
         elif action == Actions.DROP: result_text = self.drop(item)
-        elif action == Actions.DRINK: result_text = self.drink(item)
+        elif action == Actions.DRINK: result_text = self.drink(player, item)
         elif action == Actions.WHERE: result_text = self.where()
-        elif action == Actions.EAT: result_text = self.eat(item)
-        elif action == Actions.MONEY: result_text = self.count_money()
+        elif action == Actions.EAT: result_text = self.eat(player, item)
+        elif action == Actions.MONEY: result_text = self.count_money(player)
         elif action == Actions.BUY: result_text = self.buy(item_text, amount)
         elif action == Actions.SELL: result_text = self.sell(item_text, amount)
         elif action == Actions.WHAT_BUY: result_text = self.whats_for_sale()
         else:
             result_text = ReplyHelpers.render_common_template('no_action')
         
-        return QuestGameNormalReply(self, result_text + ' ' + self.__check_for_monster())
+        return QuestGameNormalReply(self, result_text + ' ' + self.__check_for_monster(player))
 
-    def __check_for_monster(self):
+    def __check_for_monster(self, player):
         #Has a monster appeared?
         monster = self.get_next_monster()
         result = ''
         if monster is None:
-            self.player._end_battle()
+            player._end_battle()
         else:
             #Yikes a monster!
-            if not self.player.is_in_battle:
-                self.player._start_battle()
-                with Observer(self.player) as ob:
-                    if GameRules.roll_initiative_check(monster) > GameRules.roll_initiative_check(self.player):
+            if not player.is_in_battle:
+                player._start_battle()
+                with Observer(player) as ob:
+                    if GameRules.roll_initiative_check(monster) > GameRules.roll_initiative_check(player):
                         #Monster strikes first
                         result = ReplyHelpers.render_action_template('monster_detects_you',monster_name=monster.class_name)
-                        monster.strike(self.player)
+                        monster.strike(player)
                     else:
                         #Player gets to attack first
                         result = ReplyHelpers.render_action_template('monster_detected',monster_name=monster.class_name)
@@ -912,7 +865,7 @@ class StoreRoom(Room):
                 if itm.count == 0: self.__items.remove(itm)
                 break
 
-    def buy(self, item_text, amount=1):
+    def buy(self, player, item_text, amount=1):
         #Store has item to sell
         item = None
         for itm in self.__items:
@@ -930,17 +883,17 @@ class StoreRoom(Room):
             description = item.description_plural
 
         #Can afford items
-        if self.player.money < item.cost:
+        if player.money < item.cost:
             return ReplyHelpers.render_action_template('buy_no_money', item_text=description)
 
         #Buy items
-        self.player.inventory.remove_money(item.cost)
+        player.inventory.remove_money(item.cost)
         self.__remove_item(item)
-        self.player.pickup(item)
+        player.pickup(item)
         return ReplyHelpers.render_action_template('buy_item', item_text=description)
 
-    def sell(self, item_text, amount=1):
-        item = self.player.get_item_by_name(item_text)
+    def sell(self, player, item_text, amount=1):
+        item = player.get_item_by_name(item_text)
         if item is None:
             return ReplyHelpers.render_action_template('not_carrying_unknown', action=Actions.get_action_text(Actions.SELL))
         
@@ -951,7 +904,7 @@ class StoreRoom(Room):
             return ReplyHelpers.render_action_template('sell_no_item', item_prefix=item.text_prefix, item_text=item.description)
 
         #Has item to sell
-        itm = self.player.inventory.get_item(item)
+        itm = player.inventory.get_item(item)
         if itm is None:
             return ReplyHelpers.render_action_template('not_carrying', action=Actions.get_action_text(Actions.SELL), item_prefix=item.text_prefix, item_text=item.description)
         
@@ -963,8 +916,8 @@ class StoreRoom(Room):
             description = item.description_plural
 
         #Sell items
-        self.player.drop(item)
-        self.player.inventory.add_money(item.cost)
+        player.drop(item)
+        player.inventory.add_money(item.cost)
         self.__add_item(item)
         return ReplyHelpers.render_action_template('sell_item', item_text=description)
 
@@ -1017,7 +970,7 @@ class CellRoom(IndoorRoom):
             rat.inventory.add(items.LockPick())
             self._add_monster(rat)
     
-    def pull(self, item):
+    def pull(self, player, item):
         if item.name == 'loose_stone':
             result = ReplyHelpers.render_room_template('cellroom_pull_stone')
             if self._get_state('hidden_item_taken'):
@@ -1025,9 +978,9 @@ class CellRoom(IndoorRoom):
             else:
                 item._has_been_opened = True
                 hidden_item = items.LockPick()
-                if self.player.__class__ == players.Mage:
+                if player.__class__ == players.Mage:
                     hidden_item = items.Scroll(spells.UnlockSpell())
-                self.player.pickup(hidden_item)
+                player.pickup(hidden_item)
                 self._set_state('hidden_item_taken',True)
                 result += ' ' + ReplyHelpers.render_room_template('cellroom_pull_stone_full',item_text=hidden_item.description)
         else:

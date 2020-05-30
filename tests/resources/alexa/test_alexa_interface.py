@@ -35,7 +35,7 @@ class Test_alexa_interface(unittest.TestCase):
         input = filename
         save_to = os.path.join(TTS_DIR, '{} - RESP.mp3'.format(save_to))
         self.alexa_client.ask(input, save_to=save_to)
-        print "Response saved to {}".format(save_to)
+        print("Response saved to {}".format(save_to))
         return save_to
 
     def check_utterance(self, text, resp_file, input_file):
@@ -112,13 +112,13 @@ class Test_alexa_interface(unittest.TestCase):
         request = AlexaRequest(self.app, user_id='fred', application_id='quest_game')
         request.set_intent('StartGameIntent')
         response = request.post()
-        print response.data
+        print(response.data)
         self.assertEqual(ReplyHelpers.render_descr_template('are_you_sure'), response.get_output_text())
 
         #Pass session_id to continue session
         request.set_intent('AMAZON.YesIntent')
         response = request.post(request.session_id)
-        print response.data
+        print(response.data)
         self.assertTrue(ReplyHelpers.render_descr_template('welcome') in response.get_output_text())
 
         #Prompt based on starting a new game, different when you have a saved game
@@ -129,7 +129,7 @@ class Test_alexa_interface(unittest.TestCase):
         request.set_intent('DescribeItemIntent')
         request.set_slots([request.create_slot('ditem','thief')])
         response = request.post(request.session_id)
-        print response.get_output_text()
+        print(response.get_output_text())
         self.assertTrue(ReplyHelpers.render_descr_template('descr_thief') in response.get_output_text())
 
         return request
@@ -139,7 +139,7 @@ class Test_alexa_interface(unittest.TestCase):
         request.set_intent('CharacterIntent')
         request.set_slots([request.create_slot('name','mage')])
         response = request.post(request.session_id)
-        print response.data
+        print(response.data)
         self.assertTrue(ReplyHelpers.render_action_template('char_choice',char='mage') in response.get_output_text())
 
 if __name__ == '__main__':
